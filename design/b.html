@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Čáranice – návrh B Dva pokoje</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap&subset=latin-ext" rel="stylesheet">
+<style>
+:root { --x: #FF6B4A; --x-lo: #E2502F; --o: #1FB8A6; --o-lo: #0F9887; --ink: #1D1C24; --papir: #fff; --zluta: #FFD23F; }
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: linear-gradient(105deg, var(--x) 0 50%, var(--o) 50% 100%); color: #fff; font: 600 15px/1.35 Nunito, system-ui, sans-serif; overflow: hidden; }
+.disp { font-family: "Baloo 2", system-ui; font-weight: 800; }
+.app { height: 100dvh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); }
+
+.hlavy { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; padding: 6px 12px 0; height: 92px; }
+.h { display: flex; align-items: flex-end; gap: 6px; }
+.h.o { flex-direction: row-reverse; }
+.h svg.hlava { width: 74px; height: 74px; margin-bottom: -14px; }
+.h .sk { font-size: 40px; line-height: .9; }
+.h .jm { font-size: 13px; font-weight: 800; opacity: .9; }
+.h.o .info { text-align: right; }
+
+/* stopky se sázkou */
+.stopky { width: 84px; height: 84px; position: relative; }
+.stopky svg { width: 100%; height: 100%; }
+.stopky .t { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink); font: 800 22px "Baloo 2"; padding-top: 6px; }
+
+.platno-wrap { flex: 1; min-height: 0; display: flex; justify-content: center; padding: 10px 12px; position: relative; z-index: 1; }
+.platno { height: 100%; aspect-ratio: 4/5; max-width: 100%; background: var(--papir); border-radius: 22px; box-shadow: 0 10px 24px rgba(0,0,0,.18); position: relative; overflow: hidden; }
+.platno svg { width: 100%; height: 100%; display: block; }
+.platno .mod { position: absolute; left: 12px; top: 12px; background: var(--ink); color: #fff; font: 800 12px Nunito; padding: 5px 10px; border-radius: 99px; }
+
+.dok { background: var(--ink); border-radius: 24px 24px 0 0; padding: 12px 14px max(14px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+.listek { display: flex; align-items: baseline; justify-content: space-between; }
+.listek .slovo { font-size: 30px; line-height: 1; color: var(--zluta); }
+.listek small { font-weight: 800; font-size: 12px; opacity: .65; }
+.nastroje { display: flex; align-items: center; gap: 7px; }
+.nastroje i { width: 30px; height: 30px; border-radius: 50%; flex: none; }
+.nastroje i.on { box-shadow: 0 0 0 3px var(--ink), 0 0 0 5px #fff; }
+.btn { margin-left: auto; height: 46px; padding: 0 18px; border: 0; border-radius: 99px; background: var(--zluta); color: var(--ink); font: 800 18px "Baloo 2"; }
+.tipy { display: flex; gap: 6px; flex-wrap: wrap; }
+.tip { border: 2px solid rgba(255,255,255,.25); border-radius: 99px; padding: 3px 10px; font-size: 13px; opacity: .8; }
+.hadat { display: flex; gap: 8px; }
+.hadat input { flex: 1; min-width: 0; height: 50px; border-radius: 99px; border: 0; padding: 0 18px; font: 800 18px Nunito; color: var(--ink); }
+
+.odhal { flex: 1; display: grid; place-items: center; text-align: center; gap: 12px; padding: 20px; }
+.odhal .big { font-size: 52px; line-height: .9; }
+.odhal .hl { display: flex; gap: 20px; justify-content: center; }
+.odhal .hl svg { width: 120px; height: 120px; }
+
+@media (min-width: 900px) {
+  .app { flex-direction: row; padding: 22px; gap: 22px; }
+  .levy { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .hlavy { height: 110px; }
+  .h svg.hlava { width: 96px; height: 96px; }
+  .panel { width: 360px; background: var(--ink); border-radius: 26px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .panel .stopky { width: 150px; height: 150px; align-self: center; }
+  .panel .stopky .t { font-size: 36px; }
+  .chat { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; }
+  .msg { display: flex; gap: 8px; align-items: flex-end; }
+  .msg svg { width: 34px; height: 34px; flex: none; }
+  .msg span { background: var(--o); border-radius: 16px 16px 16px 4px; padding: 7px 12px; font-weight: 800; }
+  .msg s { opacity: .75; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script type="module">
+import { hlava } from "../src/postavicky.js";
+import { ukazkaSVG } from "./ukazka.js";
+const s = new URLSearchParams(location.search).get("s") || "draw";
+const desk = innerWidth >= 900;
+// stopky: bílý ciferník, žlutá výseč = sázka (10–20 s), ručička = čas
+function stopky(sec, skryte) {
+  const P = (a, r) => [50 + r * Math.sin(a), 52 - r * Math.cos(a)];
+  const a0 = 10 / 60 * 2 * Math.PI, a1 = 20 / 60 * 2 * Math.PI, [x0, y0] = P(a0, 40), [x1, y1] = P(a1, 40);
+  const [hx, hy] = P(sec / 60 * 2 * Math.PI, 34);
+  return `<div class="stopky"><svg viewBox="0 0 100 104"><rect x="44" y="0" width="12" height="8" rx="3" fill="#fff"/><circle cx="50" cy="52" r="46" fill="#fff"/>
+    ${skryte ? `<circle cx="50" cy="52" r="40" fill="none" stroke="#1D1C24" stroke-opacity=".12" stroke-width="2" stroke-dasharray="3 5"/>` : `<path d="M50 52L${x0} ${y0}A40 40 0 0 1 ${x1} ${y1}Z" fill="#FFD23F"/>`}
+    <path d="M50 52L${hx} ${hy}" stroke="#1D1C24" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="52" r="5" fill="#1D1C24"/></svg></div>`;
+}
+const barvy = ["#1D1C24", "#E8402F", "#F5A623", "#FFD23F", "#2E9E5B", "#2F7DE3", "#8E4FD6"];
+const nastroje = `<div class="nastroje">${barvy.map((c, i) => `<i style="background:${c}" class="${i === 2 ? "on" : ""}"></i>`).join("")}<button class="btn">Hotovo</button></div>`;
+const hlavy = (vx, vo, cas, skryte) => `<div class="hlavy"><div class="h x">${hlava("kluk", vx)}<div class="info"><div class="jm">Mark</div><div class="sk disp">7</div></div></div>
+  ${desk ? "" : stopky(cas, skryte)}<div class="h o">${hlava("holka", vo)}<div class="info"><div class="jm">Radka</div><div class="sk disp">5</div></div></div></div>`;
+const platno = mod => `<div class="platno-wrap"><div class="platno">${ukazkaSVG()}${mod ? `<div class="mod">${mod}</div>` : ""}</div></div>`;
+const app = document.getElementById("app");
+if (!desk && s === "draw") app.innerHTML = hlavy("kresli", "mysli", 14, false) + platno("Zrcadlově") +
+  `<div class="dok"><div class="listek"><span class="slovo disp">žirafa</span><small>sázka 10–20 s · +3 oběma</small></div>${nastroje}</div>`;
+if (!desk && s === "guess") app.innerHTML = hlavy("kresli", "mysli", 14, true) + platno("") +
+  `<div class="dok"><div class="tipy"><span class="tip">kůň</span><span class="tip">lama</span><span class="tip">žirava – skoro!</span></div><div class="hadat"><input value="žir"><button class="btn">Tipnout</button></div></div>`;
+if (!desk && s === "reveal") app.innerHTML = `<div class="odhal"><div><div class="hl">${hlava("kluk", "radost")}${hlava("holka", "radost")}</div>
+  <div class="big disp">Trefa!</div><p>Radka uhodla <b>žirafu</b> za 14,2 s, sázka 10–20 s.<br>Oba berete +3.</p></div>${stopky(14.2, false)}<button class="btn" style="margin:0">Teď kreslí Radka</button></div>`;
+if (desk) {
+  const guess = s !== "draw";
+  app.innerHTML = `<div class="levy">${hlavy("kresli", "mysli", 14, guess)}${platno(guess ? "" : "Zrcadlově")}</div>
+  <div class="panel">${stopky(14, guess)}
+    ${guess ? "" : `<div class="listek"><span class="slovo disp">žirafa</span><small>sázka 10–20 s</small></div>`}
+    <div class="chat"><div class="msg">${hlava("holka", "mysli")}<span><s>kůň</s></span></div><div class="msg">${hlava("holka", "mysli")}<span><s>lama</s></span></div><div class="msg">${hlava("holka", "sok")}<span>žirava?</span></div></div>
+    ${guess ? `<div class="hadat"><input value="žir"><button class="btn">Tip</button></div>` : nastroje}</div>`;
+}
+</script>
+</body>
+</html>
