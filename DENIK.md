@@ -2,6 +2,15 @@
 
 PŘEVZATO 31. 10. – dodělává session na účtu P, jiná session sem nepíše.
 
+## 31. 10. 2026 – napojení na Hernu (protokol 1)
+
+- `index.html`: `<meta name="herna-protokol" content="1">`. `src/main.js`: s `#herna=1&r=…&seat&names&zaklada` hra přeskočí výzvu i setup. Zakladatel (`zaklada=1`) založí dokument `caranice-<r>` rovnou se jmény z `names` a sedne si jako x, pozvaný (`zaklada=0`) čeká („Čeká se, až hra naskočí“), pak se sám posadí jako o (stejný zápis jako „Přijmout výzvu“, bez `introMine`). Jména se čtou ze surového hashe (čárka ve jménu přežije), max. 16 znaků. Adresa se nepřepisuje na `#r.`.
+- Skryté: sdílení odkazu, Vyzvat soupeře, Zkusit sám, pole jména, přijetí výzvy, věta o odkazu v galerii. Přibylo „Jiná hra“ vedle „Odveta“ (pošle `jina-hra`).
+- Zprávy rodiči: `pripraveno`; `stav` ceka (čeká se / zakladatel před příchodem soupeře), hraje (kola), konec (obrazovka výsledku partie); `vysledek` jednou na partii z obrazovky výsledku (`partie` = `<r>:<číslo partie>`, `vitez` = sedadlo v Herně podle vlastního místa, remíza `null`). Bez `#herna` nebo s neplatným `r` je všechno jako dřív (výzva, `#solo`, série, `#r.<id>` a pojistka zakladatele).
+- Test `tests/herna.cjs` (maketa Herny jako rodič, lišta 48 px, Chromium 1440×900 + WebKit iPhone 13): zakladatel první / pozvaný první, reload obou, celá partie bez výzvy, jména s čárkou a diakritikou, výsledek od obou hráčů přesně jednou, role prohozené (zakladatel seat 1, jasný vítěz = seat 1), `jina-hra`, iPhone bez posunu stránky, kontrola bez Herny.
+- Testy lokálně (server 8810): `logika.test.mjs` 26 PASS exit 0; `herna.cjs` 26 PASS exit 0; `solo.cjs` 88 PASS exit 0; `duel.cjs` 26 PASS exit 0. Živě po nasazení commitu 157bd12: `node tests/herna.cjs https://sachasportrezervace-arch.github.io/caranice/` 26 PASS exit 0.
+- NEOVĚŘENO: běh uvnitř skutečné Herny (jen maketa rodiče, vlastní, ne `herna/tests/maketa`); losování začínajícího se nemění (v Čáranicích kreslí první vždy zakladatel, jako v ostré hře).
+
 ## 31. 10. 2026 – sólo režim (trénink) pro test
 
 - Úvod: odkaz „Zkusit sám“ pod „Vyzvat soupeře“, nebo přímo `#solo`. Nic se neposílá (žádný dotaz na mantledb, žádná místnost, žádná série), `#r.<id>` funguje jako dřív. Kód `src/solo.js`, ukázky `src/ukazky.js` (generuje `node tools/ukazky.mjs`), úpravy `src/main.js` (tlačítko, `#solo`, háček `__car.solo`) a CSS v `index.html`.
