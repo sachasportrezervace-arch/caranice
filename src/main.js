@@ -445,7 +445,7 @@ function viewRound(k, mode) {
   const platno = `<div class="plocha" id="plocha"><div class="platno" id="platno"><canvas id="cv"></canvas>${mod === "zrcadlo" ? `<div class="osa"></div>` : ""}${modChip}
     ${mode === "draw" && mod === "poslepu" ? `<div class="slepe">Kreslíš poslepu.<br>Kresbu uvidíš na konci kola.</div><div class="kurzor" id="kurzor" hidden></div>` : ""}<div class="prazdne" id="prazdne" hidden></div></div></div>`;
   const secret = mode === "guess";
-  const bar = sazkaHTML({ bet, secret, needle: true, label: secret ? `Sázka ${esc(nameOf(dr))} je tajná` : mode === "draw" ? "Tvoje sázka" : `Sázka ${esc(nameOf(dr))}`,
+  const bar = sazkaHTML({ bet, secret, needle: true, label: secret ? `Sázka je tajná, hodiny běží` : mode === "draw" ? "Tvoje sázka" : `Sázka: ${esc(nameOf(dr))}`,
     right: secret ? `<b>?</b>` : `<b>${okno(bet)}</b>` });
   let tools = "";
   if (mode === "draw") tools = `<div class="nastroje"><div class="barvy" id="barvy">${pal.map(i => `<button class="barva${i === pal[0] ? " on" : ""}" data-c="${i}" style="background:${K.BARVY[i]}" aria-label="Barva"></button>`).join("")}</div>
@@ -546,7 +546,7 @@ function bindDraw(k, h, pal) {
     if (act !== null || !rec || e.button > 0) return;
     if (mod === "jedna" && rec.strokes.length) { toast("Jedna čára! Šipkou zpět ji smažeš a začneš znovu."); return; }
     e.preventDefault();
-    act = e.pointerId; cv.setPointerCapture(e.pointerId);
+    act = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch {}
     const [x, y] = pos(e); rec.start(x, y, Date.now() - h.t, col, size); rdirty = true; push(); showCur(e, true);
   });
   cv.addEventListener("pointermove", e => {
@@ -642,7 +642,7 @@ async function viewReveal(k, spect) {
   $("view").innerHTML = `<div class="odhaleni">
     <div class="verdikt">${verdikt}</div>
     <div class="stitek"><div><small>${r.hit != null ? "Slovo" : "Bylo to"}</small><div class="slovo">${esc(w)}</div></div></div>
-    <div class="scena">${postava(avOf("x"), faces.x, COL.x)}<div class="mini" id="mini"></div>${postava(avOf("o"), faces.o, COL.o)}</div>
+    <div class="scena">${postava(avOf("x"), faces.x, "#fff")}<div class="mini" id="mini"></div>${postava(avOf("o"), faces.o, "#fff")}</div>
     ${sazkaHTML({ bet, hit: r.hit, hitOk: r.inWin, label: detail, right: r.inWin ? `<b>+${R.BONUS_OKNO} oběma</b>` : "" })}
     ${spect ? seatButtons() : `<button class="btn" id="bNext">${last ? "Výsledek partie" : R.drawerOf(k + 1) === room.seat ? "Teď kreslíš ty" : `Teď kreslí ${esc(nameOf(R.drawerOf(k + 1)))}`}</button>`}</div>`;
   $("bNext")?.addEventListener("click", () => {
