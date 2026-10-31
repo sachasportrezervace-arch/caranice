@@ -6,7 +6,8 @@ import * as K from "./kresba.js";
 import * as R from "./hra.js";
 import { porovnej, pismena } from "./shoda.js";
 import { OBTIZNOSTI } from "./slova.js";
-import { hlava, postava, AVATARY } from "./postavicky.js";
+import { hlava, postava, AVATARY, jmenoAvataru } from "./postavicky.js";
+import { createSolo } from "./solo.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -90,6 +91,7 @@ async function createRoom(name, av) {
 }
 
 async function openFromHash() {
+  if (location.hash === "#solo") { solo.menu(); return; }   // trénink: žádná místnost a žádná síť
   const m = /^#r\.([0-9a-z]{6,16})$/.exec(location.hash || "");
   if (!m) { viewSetup(); return; }
   if (!room) panel(`<h2>Otevírám Čáranici…</h2>`, "loading");
@@ -310,7 +312,8 @@ function viewSetup() {
     <div class="prav"><div class="nahled" id="nahled">${postava(av, "radost", COL.x)}</div><div class="forma">
     <div class="pole"><label for="fName">Tvoje jméno</label><input id="fName" maxlength="14" autocomplete="nickname" value="${esc(Net.store.get("car-name") || "")}" placeholder="třeba Mark">
     ${avatarPicker(av)}</div>
-    <button class="btn" id="bCreate">Vyzvat soupeře</button></div></div></div>`;
+    <button class="btn" id="bCreate">Vyzvat soupeře</button><button class="odkazbtn" id="bSolo">Zkusit sám</button></div></div></div>`;
+  $("bSolo").addEventListener("click", () => { location.hash = "solo"; });
   bindCorner(); bindAvatars(a => { av = a; $("nahled").innerHTML = postava(a, "radost", COL.x); });
   $("bCreate").addEventListener("click", async () => {
     const name = clampName($("fName").value);
@@ -693,6 +696,8 @@ function galItem(k, i, strokes) {
 }
 
 // ---------- start ----------
+const solo = createSolo({ $, esc, ICON, stopky, sazkaHTML, toast, hlava, postava, AVATARY, jmenoAvataru, COL, DESK, LIMIT, ui, s1, fitCanvas,
+  store: Net.store, goSetup: () => { history.replaceState(null, "", location.pathname + location.search); room = null; S = null; viewSetup(); } });
 addEventListener("hashchange", () => { stopPoll(); room = null; S = null; ui.key = ""; openFromHash(); });
 openFromHash();
 
@@ -704,4 +709,5 @@ window.__car = {
   pending: () => !!(room && ((room.w && room.w.pending()) || (room.dw && room.dw.pending()))),
   drawSize: k => room && room.draws[k] ? (room.draws[k].st || "").length : room && room.dw && room.dw.k === k ? room.dw.doc().st.length : 0,
   mods: p => R.modsOfPartie(room.id, p),
+  solo: { hooks: solo.hooks, ...solo.test },
 };
