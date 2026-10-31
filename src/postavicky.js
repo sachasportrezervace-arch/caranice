@@ -1,7 +1,7 @@
 // Postavičky hráčů: plochý vektor, velké plochy, bez obrysů. Hlava 100×100, obličej sdílený, výraz se mění.
-// Výrazy: klid, mysli (přemýšlí), radost, au (zklamání), sok (šok), kresli (soustředění s jazykem).
+// Výrazy nese obočí a pusa: klid, mysli (přemýšlí), radost, au (zklamání), sok (šok), kresli (zamračené soustředění).
 
-const SKIN = "#F7C59F", SKIN_LO = "#E9A983", INK = "#1B1A22", BLUSH = "#FF8C8C";
+const SKIN = "#F7C59F", SKIN_LO = "#E9A983", INK = "#1B1A22";
 
 const HEADS = {
   kluk: {
@@ -55,7 +55,8 @@ function eyes(v) {
     case "sok": return `<circle cx="${L}" cy="${Y}" r="6.5" fill="#fff"/><circle cx="${R}" cy="${Y}" r="6.5" fill="#fff"/>` + dot(L, Y, 2.8, 3.2) + dot(R, Y, 2.8, 3.2);
     case "au": return dot(L, Y + 1, 3.2, 3.8) + dot(R, Y + 1, 3.2, 3.8) +
       `<path d="M${L - 6} ${Y - 9}l9 3M${R + 6} ${Y - 9}l-9 3" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
-    case "kresli": return dot(L, Y + 1, 3.4, 3) + `<path d="M${R - 5} ${Y + 1}h9" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
+    case "kresli": return dot(L, Y + 1, 3.4, 3.4) + dot(R, Y + 1, 3.4, 3.4) +
+      `<path d="M${L - 6} ${Y - 8}l10 3M${R + 6} ${Y - 8}l-10 3" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
     default: return dot(L, Y) + dot(R, Y);
   }
 }
@@ -65,17 +66,16 @@ function mouth(v, y) {
     case "mysli": return `<path d="M44 ${y + 1}q6-3 12 1" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`;
     case "sok": return `<ellipse cx="50" cy="${y + 1}" rx="5" ry="6.5" fill="#8C2B36"/>`;
     case "au": return `<path d="M42 ${y + 3}q8-7 16 0" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
-    case "kresli": return `<path d="M43 ${y - 1}q7 5 14 0" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/><path d="M53 ${y + 1}q4 7 7 1z" fill="#FF7D8A"/>`;
+    case "kresli": return `<path d="M45 ${y}h10" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
     default: return `<path d="M44 ${y - 1}q6 5 12 0" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`;
   }
 }
 
-// SVG hlavy; vyraz mění oči a pusu, tváře se červenají při radosti
+// SVG hlavy; výraz mění oči, obočí a pusu
 export function hlava(avatar, vyraz = "klid", extra = "") {
   const h = HEADS[avatar] || HEADS.kluk, my = h.mouthY || 72;
-  const blush = vyraz === "radost" || vyraz === "kresli" ? `<ellipse cx="31" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".55"/><ellipse cx="69" cy="68" rx="5" ry="3" fill="${BLUSH}" opacity=".55"/>` : "";
   const sweat = vyraz === "au" ? `<path d="M80 40c3 5 4 8 1 10-3 1-5-2-4-5z" fill="#7FD3FF"/>` : "";
-  return `<svg viewBox="0 0 100 100" class="hlava v-${vyraz}" aria-hidden="true" ${extra}>${h.back}${h.face}${blush}${eyes(vyraz)}${h.front}${mouth(vyraz, my)}${sweat}</svg>`;
+  return `<svg viewBox="0 0 100 100" class="hlava v-${vyraz}" aria-hidden="true" ${extra}>${h.back}${h.face}${eyes(vyraz)}${h.front}${mouth(vyraz, my)}${sweat}</svg>`;
 }
 
 // tělo pro velký desktopový portrét (tričko v barvě hráče)
