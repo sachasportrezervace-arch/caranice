@@ -1,5 +1,5 @@
 // Napojení na Hernu (protokol 1, react-apps/HERNA-PROTOKOL.md): hra v iframe, ve 2 prohlížečích.
-// A = Chromium desktop 1440×900, B = WebKit iPhone 13. Rodičovská stránka je maketa Herny (lišta 48 px + iframe, zprávy se sbírají).
+// A = Chromium desktop 1440×900, B = WebKit iPhone 13. Rodičovská stránka je maketa Herny (lišta 51 px + iframe, zprávy se sbírají).
 // Scénář 1: zakladatel (A, seat 0) otevře první, pozvaný (B, seat 1) naskočí sám, celá partie bez výzvy, výsledek a „Jiná hra“.
 // Scénář 2: role prohozené (B zakládá jako seat 1, A se posadí jako seat 0 a otevře dřív), partie s jasným vítězem = seat 1.
 // Scénář 3: bez #herna se hra chová postaru (výzva, sólo), neplatné parametry také.
@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const rid = () => [...Array(12)].map(() => "0123456789abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 36)]).join("");
 const u = new URL(URL0);
 const RODIC = u.origin + u.pathname.replace(/[^/]*$/, "") + "__rodic.html";
-const RODIC_HTML = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>html,body{height:100%;margin:0;background:#222}#lista{height:48px;background:#111;color:#fff}iframe{border:0;width:100%;height:calc(100% - 48px);display:block}</style>
+const RODIC_HTML = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>html,body{height:100%;margin:0;background:#222}#lista{height:51px;background:#111;color:#fff}iframe{border:0;width:100%;height:calc(100% - 51px);display:block}</style>
 <div id="lista">Herna</div><iframe id="g" allow="fullscreen"></iframe>
 <script>window.__msgs=[];var g=document.getElementById("g");addEventListener("message",function(e){if(e.source!==g.contentWindow)return;var z=e.data;if(z&&typeof z==="object"&&z.herna===1)window.__msgs.push(z);});g.src=new URLSearchParams(location.search).get("src");</script>`;
 
@@ -133,7 +133,7 @@ const summary = P => frameOf(P).evaluate(() => [...document.querySelectorAll(".v
   check("B: pripraveno, ceka, hraje v tomto pořadí", tB.indexOf("pripraveno") === 0 && tB.indexOf("stav:ceka") < tB.indexOf("stav:hraje") && tB.includes("stav:hraje"), tB.join(","));
   await shot(B, "herna-b1-wait-mobil"); await shot(A, "herna-a2-pick-desk");
   const fB1 = await fits(B), fA1 = await fits(A);
-  check("iPhone v Herně (iframe o 48 px nižší): čekání bez posunu", fB1.sh <= fB1.ih + 1 && fB1.sw <= fB1.iw + 1, JSON.stringify(fB1));
+  check("iPhone v Herně (iframe o 51 px nižší): čekání bez posunu", fB1.sh <= fB1.ih + 1 && fB1.sw <= fB1.iw + 1, JSON.stringify(fB1));
   check("desktop v Herně: výběr slova bez posunu", fA1.sh <= fA1.ih + 1, JSON.stringify(fA1));
 
   // reload zakladatele i pozvaného: sedí na svých místech, dokument se nezakládá znovu
@@ -156,6 +156,8 @@ const summary = P => frameOf(P).evaluate(() => [...document.querySelectorAll(".v
   check("oba hráči pošlou přesně jeden výsledek, stejná partie, stejný vítěz (sedadlo v Herně)",
     mA.length === 1 && mB.length === 1 && mA[0].partie === `${r1}:1` && mB[0].partie === mA[0].partie && mA[0].vitez === exp && mB[0].vitez === exp, JSON.stringify({ sx, so, exp, mA, mB }));
   check("fáze: ceka → hraje → konec", (await typs(A)).join(",").includes("stav:hraje,stav:konec") && (await typs(B)).includes("stav:konec"), (await typs(A)).join(","));
+  const bb = await frameOf(B).evaluate(() => ["bOdveta", "bJina"].map(id => document.getElementById(id).getBoundingClientRect().bottom).concat(innerHeight));
+  check("iPhone v Herně: Odveta i Jiná hra celé nad spodní hranou rámu", bb[0] <= bb[2] && bb[1] <= bb[2], JSON.stringify(bb));
   check("Odveta i Jiná hra jsou vidět, Jiná hra pošle jina-hra jen tomu, kdo klikl", await frameOf(B).locator("#bOdveta").isVisible() && await frameOf(B).locator("#bJina").isVisible());
   await frameOf(B).click("#bJina");
   await waitMsg(B, "m.typ==='jina-hra'");
