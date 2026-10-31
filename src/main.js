@@ -91,6 +91,8 @@ async function createRoom(name, av) {
 }
 
 async function openFromHash() {
+  H = readHerna();
+  if (H) { hernaStart(); return hernaOpen(); }
   if (location.hash === "#solo") { solo.menu(); return; }   // trénink: žádná místnost a žádná síť
   const m = /^#r\.([0-9a-z]{6,16})$/.exec(location.hash || "");
   if (!m) { viewSetup(); return; }
@@ -102,6 +104,81 @@ async function openFromHash() {
   ui.share = false;
   await enterRoom(m[1], meta);
   decide();
+}
+// ---------- Herna (protokol 1, react-apps/HERNA-PROTOKOL.md) ----------
+// Běží jen s <meta name="herna-protokol"> a #herna=1&r=…: bez nich je všechno jako dřív (výzva, #solo, série).
+// Místnost hry = r z adresy (dokument caranice-<r>), kdo je kdo a jak se jmenuje, ručí Herna (seat, names), žádná výzva ani introMine.
+let H = null;                        // { r, m, seat, names: [seat0, seat1], zaklada } nebo null
+const HP = { r: "", faze: "", poslano: new Set(), joining: false };
+function readHerna() {
+  if (!document.querySelector('meta[name="herna-protokol"]')) return null;
+  const kv = {};
+  for (const part of location.hash.slice(1).split("&")) { const i = part.indexOf("="); if (i > 0) kv[part.slice(0, i)] = part.slice(i + 1); }
+  if (kv.herna !== "1" || !/^[0-9a-z]{6,16}$/.test(kv.r || "")) return null;
+  const dec = t => { try { return decodeURIComponent(t); } catch { return t; } };
+  const nm = (kv.names || "").split(",").map(t => String(dec(t)).replace(/\s+/g, " ").trim().slice(0, 16));
+  return { r: kv.r, m: kv.m || "", seat: kv.seat === "1" ? 1 : 0, names: [nm[0] || "Hráč 1", nm[1] || "Hráč 2"], zaklada: kv.zaklada === "1" };
+}
+const doHerny = z => { if (H && window.parent !== window) { try { window.parent.postMessage({ herna: 1, ...z }, "*"); } catch {} } };
+function hernaStart() {
+  if (HP.r !== H.r) { HP.r = H.r; HP.faze = ""; HP.poslano = new Set(); HP.joining = false; }
+  doHerny({ typ: "pripraveno" });
+}
+// fáze podle obrazovky: čeká se / běží partie / ukázaly se výsledky partie (tam se i hlásí výsledek, jednou na partii)
+function hernaSync() {
+  if (!H) return;
+  const k = ui.key, m = /^(\w+):(\d+)$/.exec(k);
+  const faze = m && m[1] === "partie" ? "konec" : m && /^(pick|wait|draw|guess|watch|reveal)$/.test(m[1]) ? "hraje" : "ceka";
+  if (faze !== HP.faze) { HP.faze = faze; doHerny({ typ: "stav", faze }); }
+  if (faze === "konec" && room && room.seat && S) {
+    const p = R.partieOf(+m[2]), key = H.r + ":" + p;
+    if (HP.poslano.has(key)) return;
+    HP.poslano.add(key);
+    const sc = partieScore(p), win = sc.x > sc.o ? "x" : sc.o > sc.x ? "o" : "";
+    doHerny({ typ: "vysledek", partie: key, vitez: win ? (win === room.seat ? H.seat : 1 - H.seat) : null });
+  }
+}
+function hernaPanel(key, html, cls = "") { ui.key = key; panel(html, cls); hernaSync(); }
+function viewHernaWait() {
+  const x = room && room.seat === "x";
+  panel(`<div class="dvojice">${postava((room && room.meta.g.av.x) || Net.store.get("car-av") || "kluk", "mysli", COL.x)}</div>
+    <h2>${x ? `Čeká se, až se připojí ${esc(H.names[1 - H.seat])}` : "Čeká se, až hra naskočí"}</h2><p>${x ? "Hra naskočí sama." : "Hned to bude."}</p>`);
+}
+async function hernaOpen() {
+  const my = H, id = my.r;
+  const again = ms => { clearTimeout(hernaOpen.t); hernaOpen.t = setTimeout(() => { if (H === my) hernaOpen(); }, ms); };
+  if (!room) hernaPanel("herna-otevira", my.zaklada ? `<h2>Otevírám Čáranici…</h2>` : `<h2>Čeká se, až hra naskočí</h2><p>Hned to bude.</p>`, "loading");
+  let meta;
+  try { meta = await Net.load(Net.metaUrl(id)); } catch { again(2000); return; }
+  if (H !== my) return;
+  if (!meta && my.zaklada) {
+    // zakladatel založí dokument rovnou se jmény; začíná jako x (v ostré hře také vždy ten, kdo vyzývá)
+    const av = Net.store.get("car-av") || "kluk";
+    meta = { app: "caranice", v: 1, sx: Net.device, so: "", g: { a: my.names[my.seat], b: my.names[1 - my.seat], av: { x: av, o: "" } } };
+    try { await Net.save(Net.metaUrl(id), meta); await Net.save(Net.seatUrl(id, "x"), seatDoc()); Net.store.set(seatKey(id), "x"); }
+    catch { again(2000); return; }
+  }
+  if (H !== my) return;
+  if (!meta) { again(1100); return; }
+  if (meta.app !== "caranice") { viewError("Tahle hra neexistuje.", "Zkus ji v Herně vybrat znovu."); return; }
+  ui.share = false;
+  await enterRoom(id, meta);
+  decide();
+}
+// pozvaný se posadí na volné místo (stejný zápis jako „Přijmout výzvu“, jen bez tlačítka), jméno dává Herna
+async function hernaJoin() {
+  if (!H || !room || room.seat || room.meta.so || HP.joining) return;
+  const my = H, rm = room, name = my.names[my.seat], xav = rm.meta.g.av.x;
+  const pref = Net.store.get("car-av") || "holka", av = pref === xav ? (xav === "holka" ? "kluk" : "holka") : pref;
+  HP.joining = true;
+  try {
+    const r = await Net.commitMeta(rm.id, d => d && !d.so && d.sx !== Net.device ? { ...d, so: Net.device, g: { ...d.g, b: name, av: { ...d.g.av, o: av } } } : null);
+    if (H !== my || room !== rm) return;
+    rm.meta = r.d || rm.meta;
+    if (r.ok) { rm.seat = "o"; await Net.save(Net.seatUrl(rm.id, "o"), seatDoc()); rm.docs.o = seatDoc(); attachSeat(); ui.key = ""; }
+  } catch { setTimeout(() => { HP.joining = false; hernaJoin(); }, 1500); return; }
+  HP.joining = false;
+  if (H === my && room === rm) decide();
 }
 async function enterRoom(id, meta) {
   stopPoll();
@@ -211,10 +288,12 @@ function decide() {
   if (!room) return;
   S = R.state(room.id, docs());
   const meta = room.meta;
+  if (H && !room.seat && !meta.so) { hernaJoin(); return show("herna-wait", viewHernaWait); }
   if (!room.seat) {
     if (!meta.so) return show("intro", viewIntro);
     return spectate();
   }
+  if (H && !meta.so) return show("herna-wait", viewHernaWait);
   if (!meta.so && ui.share && !(mine().h[1] && mine().h[1].t)) return show("share", viewShare);
   let cur = Math.min(mine().rdy || 1, S.k);
   ui.k = cur;
@@ -249,6 +328,7 @@ function show(key, fn) {
   document.body.classList.toggle("odhal", /^(reveal|spectrev)/.test(key));
   fn();
   update();
+  hernaSync();
 }
 function setMine(patch, urgent) { room.w.set(patch, urgent); }
 
@@ -354,7 +434,8 @@ const seatButtons = () => `<p class="male">Hraješ na jiném zařízení? <butto
 document.addEventListener("click", e => { const b = e.target.closest("[data-seat]"); if (b && room && !room.seat) takeSeat(b.dataset.seat); });
 function viewError(t, text, retry) {
   room = null; stopPoll(); ui.key = "error";
-  panel(`<h2>${esc(t)}</h2><p>${esc(text)}</p>${retry ? "" : `<button class="btn" id="bNew">Založit novou hru</button>`}`);
+  panel(`<h2>${esc(t)}</h2><p>${esc(text)}</p>${retry || H ? "" : `<button class="btn" id="bNew">Založit novou hru</button>`}`);
+  hernaSync();
   $("bNew")?.addEventListener("click", () => { history.replaceState(null, "", location.pathname + location.search); viewSetup(); });
 }
 function viewWait(k) {
@@ -677,10 +758,11 @@ async function viewPartie(p) {
     ${st ? `<div class="pomoc">${esc(nameOf(win))}: ${st}</div>` : ""}
     <div class="tituly">${titles}</div>
     <div class="serie">Série <b>${ser.x} : ${ser.o}</b>${ser.rem ? ` · remízy ${ser.rem}` : ""}</div>
-    <button class="btn" id="bOdveta">Odveta</button>
+    <div class="akce"><button class="btn" id="bOdveta">Odveta</button>${H ? `<button class="btn alt" id="bJina">Jiná hra</button>` : ""}</div>
     <h2 class="gal">Galerie partie</h2>
     <div class="galerie" id="galerie">${ks.map((k, i) => galItem(k, i, null)).join("")}</div>
-    <p class="male">Galerie zůstává uložená v odkazu hry.</p></div>`;
+    ${H ? "" : `<p class="male">Galerie zůstává uložená v odkazu hry.</p>`}</div>`;
+  $("bJina")?.addEventListener("click", () => doHerny({ typ: "jina-hra" }));
   $("bOdveta").addEventListener("click", () => { setMine({ rdy: R.firstOf(p + 1) }, true); ui.partieSeen = 0; decide(); });
   for (const [i, k] of ks.entries()) {
     const c = await loadDraw(k);
@@ -710,4 +792,5 @@ window.__car = {
   drawSize: k => room && room.draws[k] ? (room.draws[k].st || "").length : room && room.dw && room.dw.k === k ? room.dw.doc().st.length : 0,
   mods: p => R.modsOfPartie(room.id, p),
   solo: { hooks: solo.hooks, ...solo.test },
+  herna: () => H ? { ...H, faze: HP.faze, poslano: [...HP.poslano] } : null,
 };

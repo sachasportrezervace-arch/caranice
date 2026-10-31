@@ -57,3 +57,7 @@ node tests/solo.cjs [URL]
 `solo.cjs` bere volitelně adresu (třeba živou na Pages), výchozí je `http://127.0.0.1:8810/?api=local`.
 
 `duel.cjs` je souboj dvou prohlížečů v Playwrightu (Chromium a WebKit), potřebuje běžící server.
+
+## Herna
+
+Hra umí protokol Herny (`<meta name="herna-protokol" content="1">`, definice `react-apps/HERNA-PROTOKOL.md`). Otevřená s `#herna=1&m=…&r=…&seat=0|1&names=A,B&zaklada=0|1` přeskočí výzvu i setup: zakladatel (`zaklada=1`) založí dokument `caranice-<r>` se jmény z Herny, pozvaný se k němu posadí sám. Sdílení odkazu, „Vyzvat soupeře“ a „Zkusit sám“ jsou skryté, na konci partie přibyde „Jiná hra“. Rodiči se posílá `pripraveno`, `stav` (`ceka`/`hraje`/`konec`), `vysledek` (`partie` = `<r>:<číslo partie>`, `vitez` = sedadlo v Herně, `null` = remíza) a `jina-hra`. Bez `#herna` je všechno jako dřív. Test: `node tests/herna.cjs [URL]` (maketa Herny, Chromium desktop + WebKit iPhone 13).
