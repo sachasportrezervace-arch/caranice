@@ -24,7 +24,7 @@ const visibleCount = (strokes, upTo) => {
 };
 
 export function createSolo(H) {
-  const { $, esc, ICON, stopky, sazkaHTML, toast, hlava, postava, AVATARY, jmenoAvataru, COL, DESK, LIMIT, ui, s1, fitCanvas, goSetup, store } = H;
+  const { $, esc, ICON, stopky, sazkaHTML, toast, hlava, postava, AVATARY, COL, DESK, LIMIT, ui, s1, fitCanvas, goSetup, store } = H;
 
   const hooks = { fault: false, mod: undefined };   // testovací háčky: simulace chyby při načtení, vynucený modifikátor
   const Z = { uh: 0, kr: 0, cur: null, raf: 0, render: null, last: null, usedWords: new Set(),
@@ -81,7 +81,7 @@ export function createSolo(H) {
   }
   function startGuess() {
     const i = nextUkazka(), u = UKAZKY[i], strokes = K.decode(u.kod), p = me();
-    const dav = AVATARY.filter(a => a !== p.av)[i % (AVATARY.length - 1)];
+    const kand = AVATARY.filter(a => a !== p.av && !(u.slovo === "kočka" && a === "kocka")), dav = kand[i % kand.length];
     Z.cur = { mode: "guess", i, u, strokes, dur: K.duration(strokes), t0: Date.now(), nap: false, tips: [], end: null, dav };
     viewGuess();
   }
@@ -95,7 +95,7 @@ export function createSolo(H) {
     const hadat = `<form class="hadat" id="hadat" autocomplete="off"><input id="fTip" enterkeyhint="send" placeholder="Tvůj tip" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Tvůj tip"><button class="btn sm" type="submit">Tipnout</button><button class="ik" type="button" id="bVzdat" aria-label="Vzdát kolo">${ICON.vlajka}</button></form>`;
     const tipy = `<div class="tipy" id="tipy"></div>`;
     const sideL = `<aside class="strana-l"><div class="bublina" id="bubTipy">…</div>${postava(p.av, "mysli", COL.x)}<div class="cedule">${esc(p.name)} hádá</div></aside>`;
-    const sideR = `<aside class="strana-p"><div class="bublina">Ukázka ${Z.used.length} z ${UKAZKY.length}</div>${postava(g.dav, "kresli", COL.o)}<div class="cedule">${esc(jmenoAvataru(g.dav))} kreslí</div></aside>`;
+    const sideR = `<aside class="strana-p"><div class="bublina">Ukázka ${Z.used.length} z ${UKAZKY.length}</div>${postava(g.dav, "kresli", COL.o)}<div class="cedule">Ukázková kresba</div></aside>`;
     $("view").innerHTML = `<div class="round">${desk ? sideL : ""}<div class="stred">${stitek}${platno}${bar}${desk ? "" : tipy}${hadat}</div>${desk ? sideR : ""}</div>`;
     fitCanvas();
     letters(); renderTips();

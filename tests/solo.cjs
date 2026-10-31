@@ -38,6 +38,7 @@ async function suite(label, browserType, ctxOpts, touch) {
   const waitView = (re, timeout = 15000) => p.waitForFunction(re => window.__car && new RegExp(re).test(__car.state().view), re.source, { timeout })
     .catch(async e => { console.log("ČEKÁNÍ NA", re, "STAV", JSON.stringify(await st().catch(() => ({})))); throw e; });
   const ink = () => p.evaluate(() => { const c = document.getElementById("cv"); if (!c) return -1; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 0) n++; return n; });
+  const waitInk = (min = 1, timeout = 4000) => p.waitForFunction(min => { const c = document.getElementById("cv"); if (!c) return false; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i] > 0) n++; return n >= min; }, min, { timeout }).catch(() => {});
   const fits = () => p.evaluate(() => { const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const cv = r("#platno"); return { sh: document.documentElement.scrollHeight, ih: innerHeight, sy: scrollY, cvBot: cv && cv.bottom, cvW: cv && cv.width, cvH: cv && cv.height, iw: innerWidth }; });
   const inView = sels => p.evaluate(sels => sels.map(q => { const e = document.querySelector(q); if (!e) return q + ": chybí"; const r = e.getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1 && r.width > 0 ? "" : `${q}: ${Math.round(r.top)}–${Math.round(r.bottom)} z ${innerHeight}`; }).filter(Boolean), sels);
   const noPageScroll = async name => { const f = await fits(); check(`${name}: stránka se neposouvá`, f.sh <= f.ih + 1 && f.sy === 0, JSON.stringify({ sh: f.sh, ih: f.ih, sy: f.sy })); };
@@ -88,15 +89,26 @@ async function suite(label, browserType, ctxOpts, touch) {
   await p.goForward();
   await waitView(/^solo:menu$/);
 
+  async function mirrorCheck(wait) {
+    if (wait) await sleep(wait);
+    const chip = await p.evaluate(() => ({ mod: !!document.querySelector(".platno .mod") && /Zrcadlově/.test(document.querySelector(".platno .mod").innerText), osa: !!document.querySelector(".platno .osa") }));
+    await waitInk(21);
+    const k = await ink();
+    check("zrcadlová ukázka: štítek Zrcadlově, osa a kresba na plátně", chip.mod && chip.osa && k > 20, JSON.stringify({ ...chip, ink: k }));
+    await shot("5-zrcadlo");
+  }
+
   // ---- hádání: kresba se přehrává v čase
   await p.click("#bHadat");
   await waitView(/^solo:guess$/);
   const w1 = await p.evaluate(() => __car.solo.word());
+  const mod1 = (await info()).mod;
   check("hádání: slovo ukázky existuje a hráč ho nevidí na obrazovce", !!w1 && !(await p.evaluate(() => document.body.innerText)).toLowerCase().includes(w1.toLowerCase()), w1);
   await sleep(900);
   const i1 = await ink(); await sleep(2600); const i2 = await ink(); await sleep(3600); const i3 = await ink();
   check("hádání: kresba se přehrává v původním tempu (inkoust roste v čase)", i2 > i1 && i3 > i2, `${i1} → ${i2} → ${i3}`);
   await shot("3-hadani");
+  if (mod1 === "zrcadlo") await mirrorCheck(0);
   if (touch) {
     const f = await fits();
     check("iPhone hádání: plátno celé na obrazovce a široké aspoň 62 %", f.cvBot <= f.ih && f.cvW >= 0.62 * f.iw, JSON.stringify(f));
@@ -123,23 +135,20 @@ async function suite(label, browserType, ctxOpts, touch) {
 
   // ---- vzdání a neopakování ukázek
   const words = [w1];
-  let seenMirror = false;
+  const leaks = [];
+  const leak = async w => { const t = noDia(await p.evaluate(() => document.body.innerText)).toLowerCase(); if (t.includes(noDia(w).toLowerCase())) leaks.push(w); };
+  let seenMirror = mod1 === "zrcadlo";
   for (let n = 2; n <= 8; n++) {
     await p.click("#bDalsi");
     await waitView(/^solo:guess$/);
     const w = await p.evaluate(() => __car.solo.word()), inf = await info();
     words.push(w);
-    if (inf.mod === "zrcadlo" && !seenMirror) {
-      seenMirror = true;
-      await sleep(3500);
-      const chip = await p.evaluate(() => ({ mod: !!document.querySelector(".platno .mod") && /Zrcadlově/.test(document.querySelector(".platno .mod").innerText), osa: !!document.querySelector(".platno .osa") }));
-      const k = await ink();
-      check("zrcadlová ukázka: štítek Zrcadlově, osa a kresba na plátně", chip.mod && chip.osa && k > 20, JSON.stringify({ ...chip, ink: k }));
-      await shot("5-zrcadlo");
-    }
+    await leak(w);
+    if (inf.mod === "zrcadlo" && !seenMirror) { seenMirror = true; await mirrorCheck(3500); }
     if (n === 2) { await p.click("#bVzdat"); await waitView(/^solo:reveal$/); const v = await p.evaluate(() => document.querySelector(".verdikt").innerText); check("vzdání: odhalí slovo a řekne Vzdáno", /Vzdáno/.test(v) && (await p.evaluate(() => document.querySelector(".stitek .slovo").innerText)) === w, v); await shot("6-vzdano"); }
     else { await p.click("#bVzdat"); await waitView(/^solo:reveal$/); }
   }
+  check("žádná ukázka neprozradí slovo v textu obrazovky (jména postav, štítky)", leaks.length === 0, leaks.join(", "));
   check("8 ukázek v sezení = 8 různých slov, žádná se neopakuje", new Set(words).size === 8, words.join(", "));
   check("zrcadlová ukázka se v osmi objevila", seenMirror);
   const lastLabel = await p.evaluate(() => document.getElementById("bDalsi").innerText);
@@ -197,7 +206,7 @@ async function suite(label, browserType, ctxOpts, touch) {
   await p.evaluate(() => { __car.solo.hooks.mod = "zrcadlo"; });
   await p.click("#bDalsi"); await waitView(/^solo:draw$/);
   check("mód Zrcadlově při kreslení: štítek a osa", await p.evaluate(() => /Zrcadlově/.test(document.querySelector(".platno .mod").innerText) && !!document.querySelector(".platno .osa")));
-  await drawShapes([[[.2, .3], [.35, .55], [.2, .8]]]); await sleep(150);
+  await drawShapes([[[.2, .3], [.35, .55], [.2, .8]]]); await waitInk(40); await sleep(150);
   const mirInk = await p.evaluate(() => { const c = document.getElementById("cv"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height), w = c.width; let l = 0, r = 0; for (let y = 0; y < c.height; y += 2) for (let x = 0; x < w; x += 2) if (d.data[(y * w + x) * 4 + 3] > 0) (x < w / 2 ? l++ : r++); return { l, r }; });
   check("zrcadlo: čára vlevo se objeví i vpravo", mirInk.l > 20 && mirInk.r > 20 && Math.abs(mirInk.l - mirInk.r) < 0.25 * (mirInk.l + mirInk.r), JSON.stringify(mirInk));
   await p.click("#bDone"); await waitView(/^solo:play$/);

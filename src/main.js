@@ -6,7 +6,7 @@ import * as K from "./kresba.js";
 import * as R from "./hra.js";
 import { porovnej, pismena } from "./shoda.js";
 import { OBTIZNOSTI } from "./slova.js";
-import { hlava, postava, AVATARY, jmenoAvataru } from "./postavicky.js";
+import { hlava, postava, AVATARY } from "./postavicky.js";
 import { createSolo } from "./solo.js";
 
 const $ = id => document.getElementById(id);
@@ -696,7 +696,7 @@ function galItem(k, i, strokes) {
 }
 
 // ---------- start ----------
-const solo = createSolo({ $, esc, ICON, stopky, sazkaHTML, toast, hlava, postava, AVATARY, jmenoAvataru, COL, DESK, LIMIT, ui, s1, fitCanvas,
+const solo = createSolo({ $, esc, ICON, stopky, sazkaHTML, toast, hlava, postava, AVATARY, COL, DESK, LIMIT, ui, s1, fitCanvas,
   store: Net.store, goSetup: () => { history.replaceState(null, "", location.pathname + location.search); room = null; S = null; viewSetup(); } });
 addEventListener("hashchange", () => { stopPoll(); room = null; S = null; ui.key = ""; openFromHash(); });
 openFromHash();
