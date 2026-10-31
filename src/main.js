@@ -123,7 +123,7 @@ function attachSeat() {
 }
 async function accept(name, av) {
   if (!name) { $("fName").focus(); toast("Napiš svoje jméno."); return; }
-  if (sameName(name, room.meta.g.a)) { toast(`Výzvu založil(a) ${room.meta.g.a}. Jsi to ty? Klepni na „Jsem ${room.meta.g.a}“.`, 4200); $("bAsX").hidden = false; return; }
+  if (sameName(name, room.meta.g.a)) { toast(`Výzva je od jména ${room.meta.g.a}. Jsi to ty? Klepni na „Jsem ${room.meta.g.a}“.`, 4200); $("bAsX").hidden = false; return; }
   Net.store.set("car-name", name); Net.store.set("car-av", av);
   const b = $("bAccept"); b.disabled = true; b.textContent = "Přijímám…";
   try {
@@ -239,7 +239,7 @@ function spectate() {
   if (k > 1) { ui.k = k - 1; return show("spectrev:" + (k - 1), () => viewReveal(k - 1, true)); }
   ui.k = k;
   return show("spectwait", () => panel(`<div class="dvojice">${postava(avOf("x"), "mysli", COL.x)}${postava(avOf("o"), "mysli", COL.o)}</div>
-    <h2>${esc(nameOf("x"))} a ${esc(nameOf("o"))} se chystají</h2><p>Díváš se jako divák. Kresba se tu objeví živě.</p>${seatButtons()}`));
+    <h2>${esc(nameOf("x"))} a ${esc(nameOf("o"))} se chystají</h2><p>Zatím sleduješ zvenku. Kresba se tu objeví živě.</p>${seatButtons()}`));
 }
 function show(key, fn) {
   if (ui.key === key) { update(); return; }
@@ -306,11 +306,12 @@ const pravidla = `<ol class="pravidla">
 function viewSetup() {
   renderTop("none"); ui.key = "setup";
   let av = Net.store.get("car-av") || "kluk";
-  $("view").innerHTML = cornerBtn() + `<div class="panel"><h1><span>Čáranice</span></h1>${pravidla}
+  $("view").innerHTML = cornerBtn() + `<div class="panel dva setup"><div class="lev"><h1 class="logo"><span>Čáranice</span></h1>${pravidla}</div>
+    <div class="prav"><div class="nahled" id="nahled">${postava(av, "radost", COL.x)}</div><div class="forma">
     <div class="pole"><label for="fName">Tvoje jméno</label><input id="fName" maxlength="14" autocomplete="nickname" value="${esc(Net.store.get("car-name") || "")}" placeholder="třeba Mark">
     ${avatarPicker(av)}</div>
-    <button class="btn" id="bCreate">Vyzvat soupeře</button></div>`;
-  bindCorner(); bindAvatars(a => av = a);
+    <button class="btn" id="bCreate">Vyzvat soupeře</button></div></div></div>`;
+  bindCorner(); bindAvatars(a => { av = a; $("nahled").innerHTML = postava(a, "radost", COL.x); });
   $("bCreate").addEventListener("click", async () => {
     const name = clampName($("fName").value);
     if (!name) { $("fName").focus(); toast("Napiš svoje jméno, ať soupeř ví, kdo ho vyzývá."); return; }
@@ -322,12 +323,13 @@ function viewSetup() {
 const linkFor = () => BASE + "#r." + room.id;
 function viewShare() {
   renderTop("none");
-  $("view").innerHTML = cornerBtn() + `<div class="panel"><div class="dvojice">${postava(avOf("x"), "radost", COL.x)}</div>
-    <h2>Pošli odkaz soupeři</h2><p>Kdo ho otevře, hraje proti tobě. Další lidé se můžou jen dívat.</p>
+  $("view").innerHTML = cornerBtn() + `<div class="panel dva share"><div class="lev"><h1 class="logo"><span>Čáranice</span></h1>${pravidla}</div>
+    <div class="prav"><div class="kop"><div class="dvojice">${postava(avOf("x"), "radost", COL.x)}</div>
+    <h2>Pošli odkaz soupeři</h2><p>Kdo ho otevře, hraje proti tobě. Další lidé se můžou jen dívat.</p></div>
     <div class="odkaz" id="link">${esc(linkFor())}</div>
     <div class="akce">${navigator.share ? `<button class="btn" id="bShare">Poslat odkaz</button>` : ""}<button class="btn ${navigator.share ? "alt" : ""}" id="bCopy">Zkopírovat</button></div>
     <p class="male">Nemusíte být online zároveň. Můžeš rovnou nakreslit první obrázek a soupeři se přehraje ve stejném tempu.</p>
-    <button class="odkazbtn" id="bStart">Nakreslit první obrázek</button></div>`;
+    <button class="odkazbtn" id="bStart">Nakreslit první obrázek</button></div></div>`;
   bindCorner();
   $("bShare")?.addEventListener("click", () => navigator.share({ title: "Čáranice", text: `${nameOf("x")} tě vyzývá na Čáranici`, url: linkFor() }).catch(() => {}));
   $("bCopy").addEventListener("click", () => navigator.clipboard.writeText(linkFor()).then(() => toast("Odkaz je zkopírovaný."), () => toast("Zkopíruj odkaz ručně.")));
@@ -337,9 +339,10 @@ function viewIntro() {
   const g = room.meta.g;
   let av = Net.store.get("car-av") || (g.av.x === "holka" ? "kluk" : "holka");
   const pre = Net.store.get("car-name") || "";
-  panel(`<div class="dvojice">${postava(g.av.x, "radost", COL.x)}</div><h2>${esc(g.a)} tě vyzývá na Čáranici</h2>${pravidla}
+  panel(`<div class="lev"><h1 class="logo"><span>Čáranice</span></h1>${pravidla}</div>
+    <div class="prav"><div class="kop"><div class="dvojice">${postava(g.av.x, "radost", COL.x)}</div><h2>${esc(g.a)} tě vyzývá na Čáranici</h2></div><div class="forma">
     <div class="pole"><label for="fName">Tvoje jméno</label><input id="fName" maxlength="14" autocomplete="nickname" value="${esc(sameName(pre, g.a) ? "" : pre)}" placeholder="třeba Radka">${avatarPicker(av)}</div>
-    <button class="btn" id="bAccept">Přijmout výzvu</button><button class="odkazbtn" id="bAsX" hidden>Jsem ${esc(g.a)}</button>`);
+    <button class="btn" id="bAccept">Přijmout výzvu</button><button class="odkazbtn" id="bAsX" hidden>Jsem ${esc(g.a)}</button></div></div>`, "dva intro");
   bindAvatars(a => av = a);
   $("bAccept").addEventListener("click", () => accept(clampName($("fName").value), av));
   $("bAsX").addEventListener("click", () => takeSeat("x"));
@@ -437,29 +440,30 @@ function viewRound(k, mode) {
   const help = mode === "guess" && R.comeback(me, S.score);
   // štítek
   let stitek;
-  if (mode === "draw" || mode === "watch") stitek = `<div class="stitek"><div><small>${mode === "draw" ? "Kreslíš" : `Hádá ${esc(nameOf(gs))}`}</small><div class="slovo">${esc(wd)}</div></div></div>`;
+  if (mode === "draw") stitek = `<div class="stitek"><div><small>Kreslíš</small><div class="slovo">${esc(wd)}</div></div><div class="vpravo"><button class="btn-hotovo" id="bDone">Hotovo</button></div></div>`;
+  else if (mode === "watch") stitek = `<div class="stitek"><div><small>Hádá ${esc(nameOf(gs))}</small><div class="slovo">${esc(wd)}</div></div></div>`;
   else if (mode === "spect") stitek = `<div class="stitek"><div><small>${esc(nameOf(dr))} kreslí, ${esc(nameOf(gs))} hádá</small><div class="slovo">${esc(wd)}</div></div></div>`;
   else stitek = `<div class="stitek"><div><small>Hádej, co kreslí ${esc(nameOf(dr))}</small><div class="pismena" id="pismena"></div></div>
     <div class="vpravo">${help ? `<span class="pomoc">První písmeno zdarma</span>` : `<button class="btn-line" id="bNap">Kolik písmen?</button>`}</div></div>`;
   const modChip = mod ? `<div class="mod">${ICON.mod[mod]}${R.MODY[mod].nazev}</div>` : "";
-  const platno = `<div class="plocha" id="plocha"><div class="platno" id="platno"><canvas id="cv"></canvas>${mod === "zrcadlo" ? `<div class="osa"></div>` : ""}${modChip}
+  const platno = `<div class="plocha" id="plocha"><div class="platno" id="platno"><canvas id="cv"></canvas>${mod === "zrcadlo" ? `<div class="osa"></div>` : ""}${modChip}${mode === "draw" && !desk ? `<div class="tipy nad" id="tipy"></div>` : ""}
     ${mode === "draw" && mod === "poslepu" ? `<div class="slepe">Kreslíš poslepu.<br>Kresbu uvidíš na konci kola.</div><div class="kurzor" id="kurzor" hidden></div>` : ""}<div class="prazdne" id="prazdne" hidden></div></div></div>`;
   const secret = mode === "guess";
   const bar = sazkaHTML({ bet, secret, needle: true, label: secret ? `Sázka je tajná, hodiny běží` : mode === "draw" ? "Tvoje sázka" : `Sázka: ${esc(nameOf(dr))}`,
     right: secret ? `<b>?</b>` : `<b>${okno(bet)}</b>` });
   let tools = "";
   if (mode === "draw") tools = `<div class="nastroje"><div class="barvy" id="barvy">${pal.map(i => `<button class="barva${i === pal[0] ? " on" : ""}" data-c="${i}" style="background:${K.BARVY[i]}" aria-label="Barva"></button>`).join("")}</div>
-    <button class="ik tl" id="bTl" aria-label="Tloušťka čáry"><b></b></button><button class="ik" id="bUndo" aria-label="Zpět">${ICON.zpet}</button><button class="btn sm" id="bDone">Hotovo</button></div>`;
+    <button class="ik tl" id="bTl" aria-label="Tloušťka čáry"><b></b></button><button class="ik" id="bUndo" aria-label="Zpět">${ICON.zpet}</button></div>`;
   const hadat = mode === "guess" ? `<form class="hadat" id="hadat" autocomplete="off"><input id="fTip" enterkeyhint="send" placeholder="Tvůj tip" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Tvůj tip"><button class="btn sm" type="submit">Tipnout</button><button class="ik" type="button" id="bVzdat" aria-label="Vzdát kolo">${ICON.vlajka}</button></form>` : "";
   const tipy = `<div class="tipy" id="tipy"></div>`;
   const side = seat => {
     const isDr = seat === dr;
-    const bub = isDr ? (mode === "guess" ? `<div class="bublina">Sázka? To je tajné.</div>` : `<div class="bublina">Vsadil(a) jsem <span class="disp">${okno(bet)}</span></div>`)
+    const bub = isDr ? (mode === "guess" ? `<div class="bublina">Sázku neprozradím.</div>` : `<div class="bublina">Sázka: <span class="disp">${okno(bet)}</span></div>`)
       : `<div class="bublina" id="bubTipy">…</div>`;
-    const under = !isDr && mode === "guess" && seat === me ? hadat : `<div class="cedule">${esc(nameOf(seat))} ${isDr ? "kreslí" : "hádá"}</div>`;
+    const under = `<div class="cedule">${esc(nameOf(seat))} ${isDr ? "kreslí" : "hádá"}</div>`;
     return `<aside class="${seat === "x" ? "strana-l" : "strana-p"}">${bub}${postava(avOf(seat), isDr ? "kresli" : "mysli", COL[seat])}${under}</aside>`;
   };
-  $("view").innerHTML = `<div class="round">${desk ? side("x") : ""}<div class="stred">${stitek}${platno}${bar}${tools}${desk ? "" : tipy + hadat}</div>${desk ? side("o") : ""}</div>`;
+  $("view").innerHTML = `<div class="round">${desk ? side("x") : ""}<div class="stred">${stitek}${platno}${bar}${tools}${desk ? hadat : (mode === "draw" ? "" : tipy) + hadat}</div>${desk ? side("o") : ""}</div>`;
   rdirty = true; lastVis = -1;
   fitCanvas();
   if (mode === "draw") bindDraw(k, h, pal);
@@ -515,7 +519,7 @@ function loop(k, mode, h, mod) {
       if (pr) {
         const empty = !strokes.length || (upTo !== Infinity && vis === 0);
         pr.hidden = !(empty && mode !== "draw");
-        pr.textContent = mode === "guess" ? `${nameOf(R.drawerOf(k))} ještě nezačal(a) kreslit` : mode === "watch" ? "Nic jsi nenakreslil(a)." : "Plátno je zatím prázdné";
+        pr.textContent = mode === "guess" ? `Kresba se ještě nezačala` : mode === "watch" ? "Plátno zůstalo prázdné" : "Plátno je zatím prázdné";
       }
     }
     // hodiny a lišta
@@ -626,9 +630,9 @@ function update() {
   const tips = g ? g.tips || [] : [];
   const chips = tips.slice(-6).reverse().map(([t, , v]) => `<span class="tip${v === 1 ? " skoro" : v === 2 ? " ok" : ""}">${esc(t)}</span>`).join("");
   const el = $("tipy");
-  if (el) el.innerHTML = chips || `<span class="napis">${m[1] === "guess" ? "Piš tipy, kolikrát chceš. Za špatné se nic nestrhává." : g ? `${esc(nameOf(gs))} zatím netipuje` : `${esc(nameOf(gs))} kresbu ještě neviděl(a)`}</span>`;
+  if (el) el.innerHTML = chips || (m[1] === "draw" ? "" : `<span class="napis">${m[1] === "guess" ? "Piš tipy, kolikrát chceš. Za špatné se nic nestrhává." : g ? "Zatím žádný tip." : "Kresbu ještě nevidí."}</span>`);
   const bub = $("bubTipy");
-  if (bub) bub.innerHTML = tips.length ? tips.slice(-3).map(([t, , v]) => v === 2 ? esc(t) : v === 1 ? `${esc(t)}?` : `<s>${esc(t)}</s>`).join(" ") : g ? "Hmm…" : "…";
+  if (bub) bub.innerHTML = tips.length ? tips.slice(-3).map(([t, , v]) => v === 2 ? esc(t) : v === 1 ? `${esc(t)}?` : `<s>${esc(t)}</s>`).join(" ") : g ? "Čekám na nápad." : "Ještě nevidím.";
 }
 
 // ---------- odhalení ----------
@@ -671,7 +675,7 @@ async function viewPartie(p) {
     <div class="tituly">${titles}</div>
     <div class="serie">Série <b>${ser.x} : ${ser.o}</b>${ser.rem ? ` · remízy ${ser.rem}` : ""}</div>
     <button class="btn" id="bOdveta">Odveta</button>
-    <h2 style="font-size:28px">Galerie partie</h2>
+    <h2 class="gal">Galerie partie</h2>
     <div class="galerie" id="galerie">${ks.map((k, i) => galItem(k, i, null)).join("")}</div>
     <p class="male">Galerie zůstává uložená v odkazu hry.</p></div>`;
   $("bOdveta").addEventListener("click", () => { setMine({ rdy: R.firstOf(p + 1) }, true); ui.partieSeen = 0; decide(); });

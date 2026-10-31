@@ -49,7 +49,7 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 #top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
 .hrac { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .hrac.o { flex-direction: row-reverse; text-align: right; }
-.hrac .hlava { width: 50px; height: 50px; flex: none; }
+.hrac .hlava { width: 54px; height: 54px; flex: none; }
 .hrac .jm { font-weight: 800; font-size: 14px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hrac .sk { font: 400 30px/1 var(--disp); }
 .hrac.x .jm { color: #FFD0C4; } .hrac.o .jm { color: #C2F5E6; }
@@ -71,6 +71,8 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 .pismena i { width: 14px; height: 4px; background: var(--ink); border-radius: 2px; font-style: normal; }
 .pismena i.l { height: auto; width: auto; background: none; font: 400 20px/1 var(--disp); }
 .pismena .mezera { width: 8px; background: none; }
+.btn-hotovo { background: var(--ink); color: var(--zluta); border-radius: 12px; min-height: 40px; padding: 0 16px; font: 400 21px/1 var(--disp); white-space: nowrap; }
+.btn-hotovo:active { transform: translateY(2px); }
 .btn-line { border: 2.5px solid var(--ink); border-radius: 10px; padding: 6px 10px; font-weight: 800; font-size: 14px; color: var(--ink); white-space: nowrap; }
 
 /* plátno */
@@ -92,7 +94,7 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 .drah .okno { position: absolute; top: 0; bottom: 0; background: var(--zluta); border-radius: 9px; }
 .drah .okno.tajne { background: repeating-linear-gradient(-45deg, rgba(255,255,255,.22) 0 6px, transparent 6px 12px); box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
 .drah .ubehlo { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(255,255,255,.16); border-radius: 9px 0 0 9px; }
-.drah .jehla { position: absolute; top: -5px; bottom: -5px; width: 5px; margin-left: -2.5px; background: #fff; border-radius: 3px; box-shadow: 0 0 0 2px var(--ink); }
+.drah .jehla { position: absolute; top: -4px; bottom: -4px; width: 5px; margin-left: -2.5px; background: #fff; border-radius: 3px; box-shadow: 0 0 0 2px var(--ink); }
 .drah .zasah { position: absolute; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 3px #fff; }
 .drah .zasah.ok { background: var(--zluta); color: var(--ink); }
 .drah .zasah svg { width: 16px; height: 16px; }
@@ -100,14 +102,15 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 .drah input[type=range] { position: absolute; inset: -8px 0; width: 100%; height: 44px; opacity: 0; cursor: grab; touch-action: none; }
 
 /* nástroje kreslíře: jeden řádek */
-.nastroje { display: flex; align-items: center; gap: 6px; flex: none; }
-.barvy { display: flex; gap: 5px; flex: 1; min-width: 0; }
-.barva { width: 30px; height: 30px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); }
-.barva.on { box-shadow: 0 0 0 3px var(--pole), 0 0 0 6px #fff; }
+.nastroje { display: flex; align-items: center; gap: 8px; flex: none; }
+.barvy { display: flex; gap: 7px; flex: 1; min-width: 0; padding: 0 6px; }
+.barva { width: 32px; height: 32px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgba(255,255,255,.9); }
+.barva.on { box-shadow: 0 0 0 2.5px var(--pole), 0 0 0 5px #fff; }
 .ik { width: 42px; height: 42px; border-radius: 12px; background: var(--pole-lo); display: grid; place-items: center; flex: none; }
 .ik svg { width: 24px; height: 24px; }
 .ik:disabled { opacity: .4; }
 .tl { position: relative; }
+.platno .tipy.nad { position: absolute; left: 10px; right: 10px; bottom: 10px; min-height: 0; pointer-events: none; }
 .tl b { display: block; width: 24px; background: #fff; border-radius: 9px; }
 
 /* tlačítka: hlavní žlutá, vedlejší obrys */
@@ -152,6 +155,13 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 .male { font-size: 14px; opacity: .9; }
 .odkazbtn { text-decoration: underline; text-underline-offset: 3px; font-weight: 800; font-size: 15px; padding: 6px; }
 
+/* plakát: úvod, pozvánka, odkaz */
+.dva .lev, .dva .prav, .dva .kop, .dva .forma { display: contents; }
+.dva .logo { order: 0; } .dva .kop > * { order: 1; } .dva .pravidla { order: 2; } .dva .forma > * { order: 3; }
+.dva.intro .logo, .dva.share .lev { display: none; }
+.dva .nahled { display: none; }
+.dva.intro { gap: 10px; } .dva.intro .dvojice .postava { width: 82px; } .dva.intro h2 { font-size: 26px; }
+
 /* výběr slova */
 .karty { display: grid; gap: 8px; width: min(420px, 100%); }
 .karta { background: #fff; color: var(--ink); border-radius: var(--r); padding: 12px 16px; display: flex; align-items: center; gap: 12px; text-align: left; min-height: 62px; }
@@ -164,7 +174,10 @@ button { cursor: pointer; border: 0; background: none; touch-action: manipulatio
 .karta.vlastni input { color: inherit; }
 .karta.vlastni input::placeholder { color: inherit; opacity: .75; }
 .vyber { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 4px 0; }
-.vyber .sazka { width: min(420px, 100%); }
+.vyber .sazka { width: min(420px, 100%); margin-top: 6px; }
+.vyber .sazka .popis { margin-bottom: 16px; }
+.vyber .drah { height: 34px; }
+.vyber .drah input[type=range] { inset: -2px 0; height: 38px; }
 .vyber h2 { font: 400 26px var(--disp); }
 .modinfo { background: var(--ink); color: var(--zluta); border-radius: var(--r); padding: 10px 14px; display: flex; gap: 10px; align-items: center; width: min(420px, 100%); text-align: left; font-size: 15px; }
 .modinfo b { font: 400 20px var(--disp); display: block; }
@@ -189,6 +202,7 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 /* konec partie a galerie */
 .konec { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 8px 0 16px; }
 .konec h2 { font: 400 clamp(40px, 11vw, 72px)/.95 var(--disp); }
+.konec h2.gal { font-size: 28px; }
 .vysledek { display: flex; gap: 18px; align-items: center; justify-content: center; }
 .vysledek .strana { display: flex; flex-direction: column; align-items: center; }
 .vysledek .postava { width: min(130px, 32vw); height: auto; }
@@ -214,9 +228,16 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 @media (min-width: 900px) and (min-height: 560px) {
   #app { padding: 18px 28px; gap: 12px; }
   #top { max-width: 1180px; margin: 0 auto; width: 100%; }
-  .hrac .hlava { width: 64px; height: 64px; }
-  .hrac .sk { font-size: 40px; } .hrac .jm { font-size: 16px; }
-  .stopky svg { width: 52px; height: 52px; } .stopky b { font-size: 34px; }
+  .hrac { gap: 12px; }
+  .hrac .hlava { width: 76px; height: 76px; }
+  .hrac .sk { font-size: 48px; } .hrac .jm { font-size: 20px; }
+  .mid .kolo { font-size: 16px; }
+  .stopky svg { width: 56px; height: 56px; } .stopky b { font-size: 38px; }
+  .stitek small { font-size: 16px; }
+  .sazka .popis { font-size: 16px; } .sazka .popis b { font-size: 24px; }
+  .osa-s { font-size: 15px; }
+  .btn-line { font-size: 15px; } .tip, .tipy .napis, .platno .mod, .pomoc { font-size: 15px; }
+  .titul span, .karta small { font-size: 14px; } .male { font-size: 15px; }
   .round { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr minmax(0, auto) 1fr; gap: 28px; width: 100%; max-width: 1280px; margin: 0 auto; }
   .round .stred { display: flex; flex-direction: column; gap: 10px; min-height: 0; width: min(62vh, 560px); }
   .strana-l, .strana-p { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 12px; padding-bottom: 8px; min-width: 0; }
@@ -226,17 +247,45 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
   .bublina::after { content: ""; position: absolute; left: 50%; bottom: -10px; margin-left: -10px; border: 10px solid transparent; border-bottom: 0; border-top-color: #fff; }
   .bublina s { text-decoration-thickness: 3px; text-decoration-color: var(--x); opacity: .65; margin-right: 8px; }
   .bublina .disp { font-size: 24px; }
-  .strana-p .hadat { width: 100%; max-width: 340px; }
   .round .tipy.mob, .round .hadat.mob { display: none; }
   .stitek .slovo { font-size: 36px; }
   .panel h2 { max-width: 22ch; }
-  .galerie { width: min(820px, 100%); }
+  .konec { gap: 10px; padding-bottom: 8px; }
+  .konec h2 { font-size: 56px; }
+  .konec h2.gal { font-size: 26px; }
+  .vysledek .postava { width: 104px; } .vysledek .sk { font-size: 46px; }
+  .galerie { grid-template-columns: repeat(6, 1fr); gap: 12px; width: min(1120px, 100%); }
+  .obraz .pod { font-size: 14px; padding: 5px 8px 7px; } .obraz .pod b { font-size: 17px; }
+
+  /* úvod, pozvánka, odkaz: dva sloupce jako plakát */
+  .dva { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 460px); gap: 72px; align-items: center; justify-content: center; text-align: left; max-width: 1180px; width: 100%; margin: 0 auto; }
+  .dva .lev { display: flex; flex-direction: column; gap: 36px; align-items: flex-start; }
+  .dva .prav { display: flex; flex-direction: column; align-items: stretch; gap: 14px; background: var(--pole-lo); border-radius: 28px; padding: 28px 32px 32px; text-align: left; }
+  .dva .kop, .dva .forma { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+  .dva.intro .logo { display: block; }
+  .dva.share .lev { display: flex; }
+  .dva .logo { font-size: 128px; line-height: .9; }
+  .dva .pravidla { max-width: 520px; gap: 18px; }
+  .dva .pravidla li { font-size: 22px; line-height: 1.3; gap: 16px; }
+  .dva .pravidla b.n { font-size: 28px; min-width: 44px; height: 44px; border-radius: 12px; }
+  .dva .kop > * { order: 0; } .dva .pravidla, .dva .forma > * { order: 0; }
+  .dva .kop { align-items: center; text-align: center; }
+  .dva .kop .postava, .dva .nahled .postava { width: 150px; height: auto; }
+  .dva .nahled { display: flex; justify-content: center; }
+  .dva.intro { gap: 72px; } .dva.intro .dvojice .postava { width: 150px; }
+  .dva h2, .dva.intro h2 { max-width: none; font-size: 40px; }
+  .dva p { max-width: none; font-size: 18px; }
+  .dva .pole { width: 100%; }
+  .dva .pole label { font-size: 16px; }
+  .dva .avatar { max-width: 96px; }
+  .dva .odkaz { width: 100%; }
+  .dva .akce, .dva .prav > .btn, .dva .forma .btn { align-self: stretch; }
 }
 @media (max-width: 899px), (max-height: 559px) {
   .round { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .round .stred { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
   .round .osa-s { display: none; }
-  .round .sazka .popis { margin-bottom: 3px; }
+  .round .sazka .popis { margin-bottom: 9px; }
   .round .drah { height: 24px; }
   .round .stitek { min-height: 50px; padding: 6px 12px; }
   .round .stitek .slovo { font-size: 28px; }

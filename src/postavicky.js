@@ -71,11 +71,11 @@ function mouth(v, y) {
   }
 }
 
-// SVG hlavy; výraz mění oči, obočí a pusu
+// SVG hlavy; výraz mění oči, obočí a pusu. Jediný výřez (viewBox) pro hlavičku kola i výběr postavy.
 export function hlava(avatar, vyraz = "klid", extra = "") {
   const h = HEADS[avatar] || HEADS.kluk, my = h.mouthY || 72;
   const sweat = vyraz === "au" ? `<path d="M80 40c3 5 4 8 1 10-3 1-5-2-4-5z" fill="#7FD3FF"/>` : "";
-  return `<svg viewBox="0 0 100 100" class="hlava v-${vyraz}" aria-hidden="true" ${extra}>${h.back}${h.face}${eyes(vyraz)}${h.front}${mouth(vyraz, my)}${sweat}</svg>`;
+  return `<svg viewBox="6 5 88 88" class="hlava v-${vyraz}" aria-hidden="true" ${extra}>${h.back}${h.face}${eyes(vyraz)}${h.front}${mouth(vyraz, my)}${sweat}</svg>`;
 }
 
 // tělo pro velký desktopový portrét (tričko v barvě hráče)

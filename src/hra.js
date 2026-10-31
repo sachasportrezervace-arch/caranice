@@ -128,10 +128,10 @@ export function titles(p, results, docs) {
     const late = wins.filter(r => { const h = docs[seat].h[r.k]; return h && h.b >= 30; });
     const hits = asGs.filter(r => r.hit != null);
     const fast = hits.filter(r => r.hit < 8000);
-    if (late.length) out[seat].push({ id: "skareda", nazev: "Mistr škaredé čáry", popis: "Trefil(a) pozdní okno schválně pomalou kresbou." });
+    if (late.length) out[seat].push({ id: "skareda", nazev: "Mistr škaredé čáry", popis: "Pozdní okno trefené schválně pomalou kresbou." });
     if (wins.length >= 2) out[seat].push({ id: "jasnovidec", nazev: "Jasnovidec", popis: `${wins.length}× trefená sázka.` });
     if (fast.length) out[seat].push({ id: "blesk", nazev: "Blesk", popis: `Uhodnuto za ${(Math.min(...fast.map(r => r.hit)) / 1000).toFixed(1).replace(".", ",")} s.` });
-    if (asGs.length && hits.length === asGs.length) out[seat].push({ id: "detektiv", nazev: "Detektiv", popis: "Uhodl(a) všechno." });
+    if (asGs.length && hits.length === asGs.length) out[seat].push({ id: "detektiv", nazev: "Detektiv", popis: "Uhodnuto všechno." });
     if (!out[seat].length && asGs.length && !hits.length) out[seat].push({ id: "abstrakt", nazev: "Galerie moderny", popis: "Nic neuhodnuto. Umění se nevysvětluje." });
     out[seat] = out[seat].slice(0, 2);
   }

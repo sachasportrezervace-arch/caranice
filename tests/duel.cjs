@@ -153,8 +153,24 @@ async function guess(p, text) { await p.fill("#fTip", text); await p.press("#fTi
   const fD = await fits(B);
   check("iPhone kreslení: nástroje i plátno bez posunu", fD.sh <= fD.ih + 1 && fD.cvBot <= fD.ih, JSON.stringify(fD));
   await shot(B, "b7-draw-mobil");
-  await sleep(1200);
+  const inVp = p => p.evaluate(() => { const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const b = r(".barvy .barva:last-child"), d = r("#bDone"), t = r("#bUndo");
+    const ok = x => !!x && x.left >= 0 && x.right <= innerWidth && x.top >= 0 && x.bottom <= innerHeight;
+    return { iw: innerWidth, ih: innerHeight, last: b && [Math.round(b.left), Math.round(b.right), Math.round(b.bottom)], lastOk: ok(b), doneOk: ok(d), undoOk: ok(t) }; });
+  // kolo může mít modifikátor „3 barvy“: pro měření šířky řady doplníme paletu na plných 6 barev
+  const nb = await B.evaluate(() => { const bx = document.getElementById("barvy"); while (bx.children.length < 6) bx.appendChild(bx.lastElementChild.cloneNode(true)); return bx.children.length; });
+  const v390 = await inVp(B);
+  check("iPhone 390 kreslení: poslední barva, Zpět i Hotovo celé ve viewportu", v390.lastOk && v390.doneOk && v390.undoOk, JSON.stringify(v390));
+  await B.setViewportSize({ width: 375, height: 667 }); await sleep(500);
+  const v375 = await inVp(B);
+  check("iPhone 375 kreslení: poslední barva, Zpět i Hotovo celé ve viewportu", v375.lastOk && v375.doneOk && v375.undoOk, JSON.stringify(v375));
+  await shot(B, "b7-draw-mobil-375");
+  await B.setViewportSize({ width: 390, height: 664 }); await sleep(400);
+  await sleep(800);
   await shot(A, "a6-guess-desk");
+  const ov = await A.evaluate(() => { const r = q => { const e = document.querySelector(q); return e ? e.getBoundingClientRect() : null; }; const h = r("#hadat"), z = r("#sazka"), pl = r("#platno");
+    const hit = (a, b) => !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+    return { h: h && [Math.round(h.left), Math.round(h.top), Math.round(h.right), Math.round(h.bottom)], z: z && [Math.round(z.left), Math.round(z.top), Math.round(z.right), Math.round(z.bottom)], overlap: h && z ? hit(h, z) : null, below: h && z ? h.top >= z.bottom : null, inVp: h ? h.bottom <= innerHeight && h.left >= 0 && h.right <= innerWidth : null, sh: document.documentElement.scrollHeight, ih: innerHeight }; });
+  check("desktop hádání: #hadat a #sazka se nepřekrývají, formulář je pod lištou a ve viewportu", ov.overlap === false && ov.below === true && ov.inVp === true && ov.sh <= ov.ih + 1, JSON.stringify(ov));
   const w2 = await B.evaluate(() => __car.word(2));
   await guess(A, w2);
   await waitView(A, /^reveal:2$/); await waitView(B, /^reveal:2$/);
