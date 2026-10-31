@@ -2,6 +2,14 @@
 
 PŘEVZATO 31. 10. – dodělává session na účtu P, jiná session sem nepíše.
 
+## 31. 10. 2026 – NASAZENO
+
+- Živě: https://sachasportrezervace-arch.github.io/caranice/ (repo `sachasportrezervace-arch/caranice`, Pages z `main`).
+- Design-eye kolo 2: **ANO, profi indie hra** (kolo 1 NE → opraveny kolize ovládání, rod „(a)“, popisky ≥14 px na desktopu, plakátové rozvržení setupu, galerie v řadě).
+- `node tests/logika.test.mjs` 26 PASS exit 0; `node tests/duel.cjs` lokálně 26 PASS exit 0; živě `node tests/duel.cjs "https://sachasportrezervace-arch.github.io/caranice/?limit=30"` 26 PASS exit 0 (ostrá mantledb, přenos kresby 2,3 s).
+- NEOVĚŘENO: skutečný iPhone v ruce (jen WebKit emulace s touch pointer událostmi), landscape, desktop 1280×720/1920×1080.
+- Zbývá (neblokuje): výběr slova na desktopu je úzký sloupec; galerie na mobilu pod ohybem; šedé neaktivní „Kreslit!“; vlajka Vzdát bez popisku; odznaky titulů v nestejné šířce.
+
 ## 31. 10. 2026 – předávka (session účtu P, kontext plný)
 
 **Hotovo a ověřeno**
