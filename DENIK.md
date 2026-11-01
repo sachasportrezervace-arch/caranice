@@ -1,6 +1,18 @@
 # Deník – Čáranice
 
-PŘEVZATO 31. 10. – dodělává session na účtu P, jiná session sem nepíše.
+PŘEVZATO 1. 11. – kolo vylepšení, session caranice-kolo; jiná session sem nepíše.
+PŘEVZATO 31. 10.
+
+## 1. 11. 2026 – kolo vylepšení (session caranice-kolo)
+
+**Hotovo**
+- Kreslení na mobilu: vrstvené plátno (`K.painter`: hotové tahy v bitmapě, každý snímek jen rozpracovaná čára), zakódování kresby při tahu nejvýš co 180 ms (dřív celá kresba na každý pohyb prstu), rozměr plátna jednou na tah, stopky a lišta jen po 0,1 s (dřív innerHTML každý snímek). Proti scrollu/zoomu: `touch-action: pan-x pan-y` na body, `touchstart/touchmove` preventDefault na plátně, `gesturestart/gesturechange` blok (iOS pinch), bez výběru textu a callout. Totéž v sólu.
+- Hádání (`shoda.js`): y = i, tolerance 0/1/2/3 podle délky, pádová koncovka (kočku, lesy, měsíce; hrad/hrach ne), vata v tipu („je to“, „asi“), tip ze dvou slov, odpověď s předložkou („babička“ = „u babičky“, „v kině“ = „kino“).
+- Sázka: posuvné okno má úchyt, pod lištou co sázka znamená („Pozná to hned“ … „Schválně škaredě“) a „Trefa okna: +3 oběma“. Kreslíř a divák vidí okno blížit se (pulz), ručičku v okně (záře, stopky tikají, krátká vibrace) a propadlé okno (šedé). Odhalení: ručička nejdřív doběhne k času zásahu, pak naskočí značka, verdikt a „+3 oběma“.
+- Async přehrávání: dopočtený bod mezi body (rovná čára se táhne), hrot pera v barvě čáry, přehrávací hlava u živé hry dohání zpoždění sítě 3× rychleji místo skoku a přeskakuje prázdné chvíle.
+- Galerie: polaroidy na pásce v barvě kreslíře, nálepka hvězda (trefa sázky) a blesk (nejrychlejší uhodnutí), klepnutí přehraje kresbu v lupě (max 7 s), srdíčko „nejhezčí“ od každého hráče (barva hráče, `fav` v dokumentu hráče), dvě srdíčka na jedné kresbě = zlatý rámeček.
+- My dva: karta s otázkou o vás dvou (15 otázek, šipkou jiná, použité na konec), odpověď tajná, Enter rovnou kreslí, karta se na mobilu posune nad klávesnici. Hádač vidí otázku ve štítku (`h.q`), odhalení i lupa taky.
+- Testy: `logika.test.mjs` +9 (shoda, hrot/interpolace), `duel.cjs` +6 (odhalení sweep, My dva otázka/únik/tolerance, srdíčka shoda, lupa). – dodělává session na účtu P, jiná session sem nepíše.
 
 ## 31. 10. 2026 – napojení na Hernu (protokol 1)
 

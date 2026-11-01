@@ -37,7 +37,9 @@
 }
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
-body { background: var(--pole); color: var(--bila); font: 600 16px/1.35 Figtree, system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; position: fixed; inset: 0; }
+body { background: var(--pole); color: var(--bila); font: 600 16px/1.35 Figtree, system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; position: fixed; inset: 0; touch-action: pan-x pan-y; }
+.round input { -webkit-user-select: text; user-select: text; }
+.round, .platno { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; touch-action: manipulation; }
 .disp { font-family: var(--disp); font-weight: 400; letter-spacing: .01em; }
@@ -328,6 +330,82 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 @media (max-width: 370px) {
   .barva { width: 26px; height: 26px; } .ik { width: 38px; height: 38px; } .btn.sm { padding: 0 12px; font-size: 18px; }
   .hrac .hlava { width: 42px; height: 42px; }
+}
+
+/* My dva: otázka o vás dvou, odpověď je slovo ke kreslení */
+.karta.mydva { flex-direction: column; align-items: stretch; gap: 6px; background: transparent; color: #fff; box-shadow: inset 0 0 0 2.5px rgba(255,255,255,.7); cursor: pointer; }
+.karta.mydva.on { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 3px var(--x); }
+.md-hlava { display: flex; align-items: center; gap: 8px; }
+.md-hlava b { font: 400 24px/1 var(--disp); flex: 1; }
+.md-hlava small { color: inherit; opacity: .8; }
+.md-hlava .srdce, .stitek .q .srdce, .lupa-pod .q .srdce { width: 20px; height: 20px; color: var(--x); flex: none; }
+.md-otazka { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; line-height: 1.2; }
+.md-otazka span { flex: 1; }
+.md-otazka span::after { content: "?"; }
+.md-jina { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 2px currentColor; opacity: .85; }
+.md-jina svg { width: 20px; height: 20px; }
+.karta.mydva input { border-bottom: 2.5px dashed currentColor; padding: 4px 0; font-size: 22px; }
+.karta.mydva input::placeholder { color: inherit; opacity: .6; font: 700 16px Figtree; }
+.stitek .q { display: flex; align-items: center; gap: 6px; }
+.stitek .q .srdce { width: 16px; height: 16px; }
+
+/* sázka: posuvné okno má úchyt, pod lištou co sázka znamená */
+.vyber .okno { box-shadow: 0 0 0 3px #fff; }
+.vyber .okno::after { content: ""; position: absolute; left: 50%; top: 50%; width: 13px; height: 14px; transform: translate(-50%, -50%); background: repeating-linear-gradient(90deg, rgba(23,22,31,.55) 0 2.5px, transparent 2.5px 5.25px); border-radius: 1px; }
+.betinfo { display: flex; justify-content: space-between; gap: 10px; width: min(420px, 100%); font-weight: 800; font-size: 14px; margin-top: -4px; }
+.betinfo #betHint { color: var(--zluta); }
+.drah .okno { transition: opacity .3s, filter .3s; }
+.drah .okno.blizko { animation: blizko .9s ease-in-out infinite; }
+.drah .okno.ted { animation: ted .5s ease-in-out infinite alternate; }
+.drah .okno.pryc { opacity: .35; filter: grayscale(1); }
+@keyframes blizko { 50% { box-shadow: 0 0 0 3px rgba(255,210,63,.55); } }
+@keyframes ted { from { box-shadow: 0 0 0 2px #fff; } to { box-shadow: 0 0 0 5px #fff, 0 0 18px 4px rgba(255,210,63,.9); } }
+.stopky.ted svg { animation: tik .5s ease-in-out infinite alternate; }
+@keyframes tik { to { transform: scale(1.12) rotate(-4deg); } }
+
+/* odhalení: ručička doběhne k zásahu, pak padne verdikt */
+.odhaleni.sweep .drah .ubehlo { animation: sweepW 1.4s cubic-bezier(.35,.05,.25,1) both; }
+.odhaleni.sweep .drah .jehla { animation: sweepL 1.4s cubic-bezier(.35,.05,.25,1) both, zmiz .2s 1.45s both; }
+.odhaleni.sweep .drah .zasah { animation: pop .4s 1.4s cubic-bezier(.3,1.7,.5,1) both; }
+.odhaleni.sweep .drah.trefa .okno { animation: ted .3s 1.5s 4 alternate both; }
+.odhaleni.sweep .verdikt { animation: pop .45s 1.5s cubic-bezier(.3,1.6,.5,1) both; }
+.odhaleni.sweep .bonus { animation: pop .4s 1.8s cubic-bezier(.3,1.6,.5,1) both; display: inline-block; }
+@keyframes sweepW { from { width: 0; } to { width: var(--to); } }
+@keyframes sweepL { from { left: 0; } to { left: var(--to); } }
+@keyframes zmiz { to { opacity: 0; } }
+@keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* galerie: polaroidy na pásce, nálepky, srdíčka hráčů, lupa s přehráním */
+.galerie { padding: 10px 10px 0; }
+.obraz .kr { position: relative; }
+.galtip { margin-top: -6px; }
+.obraz { position: relative; overflow: visible; padding: 6px 6px 0; cursor: pointer; box-shadow: 0 3px 0 rgba(23,22,31,.22); transition: transform .2s; }
+.obraz:active { transform: rotate(var(--rot)) scale(.97); }
+.obraz .kr { border-radius: 6px; overflow: hidden; background: #FAFAF7; }
+.obraz .pod { border-top: 0; padding: 5px 4px 7px; }
+.obraz .paska { position: absolute; left: 50%; top: -9px; width: 46%; height: 18px; margin-left: -23%; background: var(--c); opacity: .85; transform: rotate(var(--tape)); border-radius: 2px; box-shadow: 0 1px 0 rgba(23,22,31,.15); }
+.obraz .nalepka { position: absolute; right: -7px; top: -7px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; transform: rotate(12deg); z-index: 1; box-shadow: 0 0 0 2.5px #fff; }
+.obraz .nalepka svg { width: 18px; height: 18px; }
+.obraz .nalepka.hv { background: var(--zluta); color: var(--ink); }
+.obraz .nalepka.bl { background: var(--ink); color: var(--zluta); }
+.obraz .srdce-x, .obraz .srdce-o { position: absolute; bottom: 6px; width: 26px; height: 26px; filter: drop-shadow(0 0 0 #fff) drop-shadow(0 2px 0 rgba(23,22,31,.25)); animation: pop .35s cubic-bezier(.3,1.7,.5,1) both; pointer-events: none; }
+.obraz .srdce-x { left: 6px; color: var(--x); } .obraz .srdce-o { left: 28px; color: var(--o); }
+.obraz .srdce-x svg, .obraz .srdce-o svg { width: 100%; height: 100%; }
+.obraz.shoda { box-shadow: 0 0 0 3px var(--zluta), 0 3px 0 rgba(23,22,31,.22); }
+.obraz .fav { position: absolute; right: 0; bottom: 0; width: 36px; height: 36px; display: grid; place-items: center; color: rgba(23,22,31,.25); }
+.obraz .fav svg { width: 22px; height: 22px; }
+.obraz .fav.on { color: var(--x); }
+.lupa { position: fixed; inset: 0; z-index: 30; background: rgba(23,22,31,.72); display: grid; place-items: center; padding: 20px; animation: fade .2s both; cursor: zoom-out; }
+.lupa-ram { background: #fff; color: var(--ink); border-radius: 16px; padding: 10px 10px 14px; width: min(420px, 100%, calc((var(--vh) - 160px) * .8)); transform: rotate(-1.5deg); box-shadow: 0 8px 0 rgba(0,0,0,.25); animation: pop .3s cubic-bezier(.3,1.5,.5,1) both; }
+.lupa-platno { aspect-ratio: 4/5; border-radius: 10px; overflow: hidden; background: #FAFAF7; }
+.lupa-platno canvas { width: 100%; height: 100%; display: block; }
+.lupa-pod { padding: 10px 6px 0; border-top: 5px solid var(--c); margin-top: 10px; display: grid; gap: 2px; }
+.lupa-pod b { font: 400 30px/1 var(--disp); }
+.lupa-pod span { font-weight: 800; font-size: 15px; color: #444; }
+.lupa-pod .q { display: flex; gap: 6px; align-items: center; font-weight: 800; font-size: 15px; }
+@keyframes fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .odhaleni.sweep *, .drah .okno, .stopky.ted svg, .obraz, .lupa, .lupa-ram { animation-duration: .01s !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
 }
 
 #toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 12px; font-weight: 800; max-width: min(92vw, 420px); text-align: center; z-index: 20; opacity: 0; pointer-events: none; transition: opacity .2s; }

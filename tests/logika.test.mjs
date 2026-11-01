@@ -66,6 +66,18 @@ const ok = (name, c, extra = "") => { c ? pass++ : fail++; console.log(`${c ? "P
   ok("slova: skryj/odkryj s diakritikou", R.odkryj(R.skryj("žluťoučký kůň", "r1"), "r1") === "žluťoučký kůň");
 }
 
+// přehrávání: hrot pera a dopočtený bod mezi body (rovná čára se táhne, neobjeví se naráz)
+{
+  const st = [{ c: 1, s: 0, p: [0, 0, 0, 100, 0, 50] }];
+  const h = K.head(st, 25 * K.DT);
+  ok("přehrávání: hrot v půlce rovné čáry", h && Math.abs(h.x - 100) < 1 && h.y === 0 && h.c === 1, JSON.stringify(h));
+  ok("přehrávání: po dokreslení hrot zmizí, před začátkem není", K.head(st, 60 * K.DT) === null && K.head([{ c: 0, s: 0, p: [0, 0, 10, 5, 5, 20] }], 5 * K.DT) === null);
+  const seg = [];
+  const fake = { beginPath() {}, moveTo(x, y) { seg.push([x, y]); }, lineTo(x, y) { seg.push([x, y]); }, quadraticCurveTo() {}, stroke() {}, arc() {}, fill() {} };
+  K.paint(fake, st, 25 * K.DT);
+  ok("přehrávání: paint kreslí čáru jen do dopočteného bodu", seg.length === 2 && Math.abs(seg[1][0] - 100) < 1, JSON.stringify(seg));
+}
+
 // tolerantní porovnání
 {
   ok("shoda: diakritika a velikost písmen", porovnej("ZIRAFA", "žirafa") === "ano");
@@ -73,6 +85,12 @@ const ok = (name, c, extra = "") => { c ? pass++ : fail++; console.log(`${c ? "P
   ok("shoda: krátké slovo přesně", porovnej("ko", "kůň") === "ne" && porovnej("kun", "kůň") === "ano");
   ok("shoda: víceslovné spojení bez mezer", porovnej("karluvmost", "Karlův most") === "ano");
   ok("shoda: jiné slovo neprojde", porovnej("kočka", "žirafa") === "ne");
+  ok("shoda: y/i a dva překlepy v dlouhém slově", porovnej("mis", "myš") === "ano" && porovnej("dalekohlet", "dalekohled") === "ano" && porovnej("dalkohlet", "dalekohled") === "ano");
+  ok("shoda: jiný pád projde", ["kočku", "kocky", "lesy", "auta", "měsíce"].every((t, i) => porovnej(t, ["kočka", "kočka", "les", "auto", "měsíc"][i]) === "ano"));
+  ok("shoda: podobné jiné slovo ne", porovnej("hrach", "hrad") !== "ano" && porovnej("pec", "pes") !== "ano" && porovnej("les", "pes") !== "ano");
+  ok("shoda: vata v tipu a dvě slova", porovnej("je to kocka", "kočka") === "ano" && porovnej("velky pes", "pes") === "ano" && porovnej("asi drak", "drak") === "ano");
+  ok("shoda: odpověď My dva s předložkou", porovnej("babička", "u babičky") === "ano" && porovnej("u babicky", "u babičky") === "ano" && porovnej("v kině", "kino") === "ano");
+  ok("shoda: prázdný a nesmyslný tip", porovnej("", "pes") === "ne" && porovnej("!!!", "pes") === "ne" && porovnej("strom", "pes") === "ne");
 }
 
 // bodování: trefa okna = body oběma, mimo okno jen hádač, neuhodnuto nic

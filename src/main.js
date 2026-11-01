@@ -5,7 +5,7 @@ import * as Net from "./net.js";
 import * as K from "./kresba.js";
 import * as R from "./hra.js";
 import { porovnej, pismena } from "./shoda.js";
-import { OBTIZNOSTI } from "./slova.js";
+import { OBTIZNOSTI, MYDVA } from "./slova.js";
 import { hlava, postava, AVATARY } from "./postavicky.js";
 import { createSolo } from "./solo.js";
 
@@ -28,6 +28,10 @@ const ICON = {
   plocha: `<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   ok: `<svg viewBox="0 0 16 16"><path d="m3 8.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   ne: `<svg viewBox="0 0 16 16"><path d="m4 4 8 8m0-8-8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>`,
+  srdce: `<svg class="srdce" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17.5S2 12.6 2 7.3A4.3 4.3 0 0 1 10 5a4.3 4.3 0 0 1 8 2.3c0 5.3-8 10.2-8 10.2z" fill="currentColor"/></svg>`,
+  dalsi: `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M15.5 8A6 6 0 1 0 16 12M16 3.5V8h-4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  hvezda: `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 1.8 2.5 5.3 5.8.7-4.3 4 1.1 5.7L10 14.7l-5.1 2.8L6 11.8l-4.3-4 5.8-.7z" fill="currentColor"/></svg>`,
+  blesk: `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M11.5 1.5 4 11.2h5l-1.3 7.3 7.8-10.1h-5z" fill="currentColor"/></svg>`,
   tuzka: `<svg class="pencil" viewBox="0 0 20 20"><path d="M3 17l1.2-4.2L13.5 3.5l3 3-9.3 9.3z" fill="#FFD23F"/><path d="M3 17l1.2-4.2 3 3z" fill="#17161F"/></svg>`,
   mod: {
     jedna: `<svg viewBox="0 0 16 16"><path d="M2 12c3-8 5 2 7-4s3-4 5-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
@@ -56,9 +60,10 @@ function sazkaHTML(o) {
   const pc = s => (Math.max(0, Math.min(LIMIT, s)) / LIMIT * 100).toFixed(2) + "%";
   const ticks = [0, LIMIT / 3, LIMIT * 2 / 3, LIMIT].map(v => `<span>${Math.round(v)}${v === LIMIT ? " s" : ""}</span>`).join("");
   const win = o.bet ? `<div class="okno${o.secret ? " tajne" : ""}" style="left:${pc(o.bet.b)};width:calc(${pc(o.bet.b + o.bet.bw)} - ${pc(o.bet.b)})"></div>` : "";
-  const hit = o.hit !== undefined ? `<div class="zasah${o.hitOk ? " ok" : ""}" style="left:${pc(o.hit == null ? LIMIT : o.hit / 1000)}">${o.hit == null ? ICON.ne : ICON.ok}</div>` : "";
+  const to = o.hit !== undefined ? pc(o.hit == null ? LIMIT : o.hit / 1000) : "";
+  const hit = o.hit !== undefined ? `<div class="zasah${o.hitOk ? " ok" : ""}" style="left:${to}">${o.hit == null ? ICON.ne : ICON.ok}</div>` : "";
   return `<div class="sazka" id="sazka"><div class="popis"><span>${o.label || ""}</span><span>${o.right || ""}</span></div>
-    <div class="drah"><div class="ubehlo" id="ubehlo" style="width:0"></div>${win}${o.needle ? `<div class="jehla" id="jehla" style="left:0"></div>` : ""}${hit}${o.slider || ""}</div>
+    <div class="drah${o.hitOk ? " trefa" : ""}"${to ? ` style="--to:${to}"` : ""}><div class="ubehlo" id="ubehlo" style="width:0"></div>${win}${o.needle ? `<div class="jehla" id="jehla" style="left:0"></div>` : ""}${hit}${o.slider || ""}</div>
     <div class="osa-s">${ticks}</div></div>`;
 }
 const okno = bet => `${bet.b}–${bet.b + bet.bw} s`;
@@ -325,6 +330,7 @@ function spectate() {
 function show(key, fn) {
   if (ui.key === key) { update(); return; }
   ui.key = key; cancelAnimationFrame(ui.raf);
+  $("lupa")?.remove();
   document.body.classList.toggle("odhal", /^(reveal|spectrev)/.test(key));
   fn();
   update();
@@ -452,39 +458,53 @@ function viewPick(k) {
   const bw = help ? R.OKNO_DOTAH : R.OKNO;
   const ch = R.wordChoices(room.id, k, docs());
   let pick = null, b = Math.min(20, LIMIT - bw);
+  // My dva: otázky v náhodném pořadí, šipkou další; poslední použitá otázka v místnosti jde na konec
+  const used = new Set(Object.values(docs()).flatMap(d => Object.values((d && d.h) || {}).map(x => x && x.q)).filter(Boolean));
+  const otazky = [...MYDVA.filter(q => !used.has(q)).sort(() => Math.random() - .5), ...MYDVA.filter(q => used.has(q))];
+  let qi = 0;
   const mods = mod ? `<div class="modinfo">${ICON.mod[mod]}<div><b>${R.MODY[mod].nazev}</b>${R.MODY[mod].popis}</div></div>` : "";
   $("view").innerHTML = `<div class="vyber"><h2>Co nakreslíš?</h2>${mods}
     <div class="karty" id="karty">${ch.map((c, i) => `<button class="karta" data-i="${i}"><span class="slovo">${esc(c.slovo)}</span><small>${OBT[c.obt].nazev}<br>+${R.guessPoints(c.obt)} za uhodnutí</small></button>`).join("")}
-      <label class="karta vlastni" data-i="v"><input id="fVlastni" maxlength="24" placeholder="Vlastní slovo, třeba ${esc(nameOf(opp))}" autocomplete="off"></label></div>
+      <div class="karta mydva" data-i="v"><div class="md-hlava">${ICON.srdce}<b>My dva</b><small>+${R.guessPoints("stredni")} za uhodnutí</small></div>
+        <div class="md-otazka"><span id="otazka">${esc(otazky[0])}</span><button type="button" class="md-jina" id="bOtazka" aria-label="Jiná otázka">${ICON.dalsi}</button></div>
+        <input id="fVlastni" maxlength="24" placeholder="Tvoje odpověď, ${esc(nameOf(opp))} ji neuvidí" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Odpověď, kterou nakreslíš"></div></div>
     ${sazkaHTML({ bet: { b, bw }, label: `Vsaď si: ${esc(nameOf(opp))} to uhodne za`, right: `<b id="betTxt">${okno({ b, bw })}</b>`, slider: `<input type="range" id="fBet" min="0" max="${LIMIT - bw}" step="5" value="${b}" aria-label="Začátek okna sázky">` })}
+    <div class="betinfo"><span id="betHint">${betHint(b)}</span><span>Trefa okna: <b>+${R.BONUS_OKNO} oběma</b></span></div>
     ${help ? `<div class="pomoc">Prohráváš o ${R.DOTAH}+ body: tvoje okno je širší (${bw} s)</div>` : ""}
     <button class="btn" id="bGo" disabled>Kreslit!</button></div>`;
-  const karty = $("karty"), fv = $("fVlastni"), go = $("bGo");
+  const karty = $("karty"), fv = $("fVlastni"), go = $("bGo"), md = karty.querySelector(".mydva");
   const mark = el => { for (const c of karty.children) c.classList.toggle("on", c === el); };
+  const vlastni = () => { pick = { slovo: clampWord(fv.value), obt: "stredni", vl: 1, q: otazky[qi % otazky.length] }; go.disabled = !pick.slovo; };
   karty.addEventListener("click", e => {
     const c = e.target.closest(".karta"); if (!c) return;
     mark(c);
-    if (c.dataset.i === "v") { pick = { slovo: clampWord(fv.value), obt: "stredni", vl: 1 }; fv.focus(); }
-    else pick = { ...ch[+c.dataset.i] };
-    go.disabled = !pick.slovo;
+    if (c.dataset.i === "v") { vlastni(); if (!e.target.closest("#bOtazka") && e.target !== fv) fv.focus(); }
+    else { pick = { ...ch[+c.dataset.i] }; go.disabled = !pick.slovo; }
   });
-  fv.addEventListener("input", () => { mark(fv.parentNode); pick = { slovo: clampWord(fv.value), obt: "stredni", vl: 1 }; go.disabled = !pick.slovo; });
+  $("bOtazka").addEventListener("click", () => { qi++; $("otazka").textContent = otazky[qi % otazky.length]; vlastni(); });
+  fv.addEventListener("input", () => { mark(md); vlastni(); });
+  // klávesnice na mobilu: karta zůstane vidět a Enter rovnou začne kreslit
+  fv.addEventListener("focus", () => { mark(md); vlastni(); setTimeout(() => md.scrollIntoView({ block: "center", behavior: "smooth" }), 350); });
+  fv.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (!go.disabled) { fv.blur(); go.click(); } } });
   const okn = karty.parentNode.querySelector(".okno");
   $("fBet").addEventListener("input", e => {
     b = +e.target.value;
     okn.style.left = (b / LIMIT * 100) + "%";
     $("betTxt").textContent = okno({ b, bw });
+    $("betHint").textContent = betHint(b);
   });
   go.addEventListener("click", () => {
     if (!pick || !pick.slovo) return;
     if (pick.vl && R.usedWords(room.id, docs()).has(pick.slovo)) { toast("Tohle slovo už v sérii bylo. Vymysli jiné."); return; }
-    const h = { w: R.skryj(pick.slovo, room.id), o: pick.obt, b, bw, m: mod, t: Date.now(), ...(pick.vl ? { vl: 1 } : {}) };
+    const h = { w: R.skryj(pick.slovo, room.id), o: pick.obt, b, bw, m: mod, t: Date.now(), ...(pick.vl ? { vl: 1, q: pick.q } : {}) };
     startDrawWriter(k, "");
     setMine({ h: { ...mine().h, [k]: h } }, true);
     decide();
   });
 }
 const clampWord = s => String(s || "").replace(/\s+/g, " ").trim().slice(0, 24);
+// co sázka znamená: rychlá poznávačka, nebo schválně pomalá kresba
+const betHint = b => b < 10 ? "Pozná to hned" : b < 25 ? "Chvilku to potrvá" : b < 45 ? "Bude to dřina" : "Schválně škaredě";
 
 // ---------- kolo: kreslení, hádání, sledování ----------
 let rec = null, act = null;   // záznam tahů kreslíře, aktivní ukazatel
@@ -522,12 +542,13 @@ function viewRound(k, mode) {
   const wd = word(k, d), me = room.seat;
   const desk = DESK.matches;
   const help = mode === "guess" && R.comeback(me, S.score);
-  // štítek
+  // štítek (u My dva otázka místo popisku, hádač ji vidí jako nápovědu)
+  const q = h.q ? `<small class="q">${ICON.srdce}${esc(h.q)}?</small>` : "";
   let stitek;
-  if (mode === "draw") stitek = `<div class="stitek"><div><small>Kreslíš</small><div class="slovo">${esc(wd)}</div></div><div class="vpravo"><button class="btn-hotovo" id="bDone">Hotovo</button></div></div>`;
-  else if (mode === "watch") stitek = `<div class="stitek"><div><small>Hádá ${esc(nameOf(gs))}</small><div class="slovo">${esc(wd)}</div></div></div>`;
-  else if (mode === "spect") stitek = `<div class="stitek"><div><small>${esc(nameOf(dr))} kreslí, ${esc(nameOf(gs))} hádá</small><div class="slovo">${esc(wd)}</div></div></div>`;
-  else stitek = `<div class="stitek"><div><small>Hádej, co kreslí ${esc(nameOf(dr))}</small><div class="pismena" id="pismena"></div></div>
+  if (mode === "draw") stitek = `<div class="stitek${q ? " mydva" : ""}"><div>${q || `<small>Kreslíš</small>`}<div class="slovo">${esc(wd)}</div></div><div class="vpravo"><button class="btn-hotovo" id="bDone">Hotovo</button></div></div>`;
+  else if (mode === "watch") stitek = `<div class="stitek${q ? " mydva" : ""}"><div>${q || `<small>Hádá ${esc(nameOf(gs))}</small>`}<div class="slovo">${esc(wd)}</div></div></div>`;
+  else if (mode === "spect") stitek = `<div class="stitek${q ? " mydva" : ""}"><div>${q || `<small>${esc(nameOf(dr))} kreslí, ${esc(nameOf(gs))} hádá</small>`}<div class="slovo">${esc(wd)}</div></div></div>`;
+  else stitek = `<div class="stitek${q ? " mydva" : ""}"><div>${q || `<small>Hádej, co kreslí ${esc(nameOf(dr))}</small>`}<div class="pismena" id="pismena"></div></div>
     <div class="vpravo">${help ? `<span class="pomoc">První písmeno zdarma</span>` : `<button class="btn-line" id="bNap">Kolik písmen?</button>`}</div></div>`;
   const modChip = mod ? `<div class="mod">${ICON.mod[mod]}${R.MODY[mod].nazev}</div>` : "";
   const platno = `<div class="plocha" id="plocha"><div class="platno" id="platno"><canvas id="cv"></canvas>${mod === "zrcadlo" ? `<div class="osa"></div>` : ""}${modChip}${mode === "draw" && !desk ? `<div class="tipy nad" id="tipy"></div>` : ""}
@@ -568,6 +589,8 @@ function fitCanvas() {
   rdirty = true;
 }
 addEventListener("resize", () => { fitCanvas(); });
+// iOS Safari ignoruje zákaz zoomu ve viewportu: dvouprstý zoom stránky zastaví až gesture* události
+for (const t of ["gesturestart", "gesturechange"]) document.addEventListener(t, e => e.preventDefault(), { passive: false });
 if (window.visualViewport) visualViewport.addEventListener("resize", () => {
   document.documentElement.style.setProperty("--vh", visualViewport.height + "px"); scrollTo(0, 0); fitCanvas();
 });
@@ -575,11 +598,18 @@ DESK.addEventListener("change", () => { if (room && /^(draw|guess|watch|spect)/.
 const roundArgs = key => { const [m, k] = key.split(":"); return [+k, m]; };
 
 // vykreslovací smyčka: plátno, hodiny, ručička sázky
+// Hádač nevidí kresbu přesně v čase hodin, ale přes přehrávací hlavu `ph`: co dorazí se zpožděním sítě
+// (živá hra), dožene zrychleně místo skoku, takže čáry se pořád táhnou jako pod rukou kreslíře.
 function loop(k, mode, h, mod) {
   const cv = $("cv"); if (!cv) return;
-  const ctx = cv.getContext("2d");
-  const tick = () => {
-    if (!ui.key.endsWith(":" + k) || !$("cv")) return;
+  const pt = K.painter(cv), ctx = pt.ctx;
+  const nodes = { st: $("stopky"), j: $("jehla"), u: $("ubehlo"), ok: document.querySelector("#sazka .okno"), pr: $("prazdne") };
+  const bet = { b: h.b, bw: h.bw || R.OKNO };
+  let ph = -1, prev = performance.now(), lastTenth = -1, lastHead = "", winState = "";
+  ui.painter = pt;
+  const tick = now => {
+    if (!ui.key.endsWith(":" + k) || !cv.isConnected) { if (ui.painter === pt) ui.painter = null; return; }
+    const dt = Math.min(100, now - prev); prev = now;
     const g = (docs()[R.other(R.drawerOf(k))] || { g: {} }).g[k];
     let el;
     if (mode === "draw") el = Date.now() - h.t;
@@ -591,30 +621,72 @@ function loop(k, mode, h, mod) {
     if (mode === "draw" && el >= LIMIT * 1000) { finishDraw(k); decide(); }
     if (mode === "guess" && el >= LIMIT * 1000 && !mine().g[k].end) endGuess(k, null);
     // plátno
-    let strokes, upTo = Infinity;
-    if (rec && rec.k === k && R.drawerOf(k) === room.seat) strokes = rec.strokes;
-    else { const c = room.draws[k]; strokes = c ? c.strokes || [] : []; if (c && c.dirty) { c.dirty = false; rdirty = true; } if (mode === "guess") upTo = el; }
-    const vis = upTo === Infinity ? -2 : visibleCount(strokes, upTo);
-    if (rdirty || vis !== lastVis) {
-      rdirty = false; lastVis = vis;
-      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-      if (!(mode === "draw" && mod === "poslepu")) K.paint(ctx, strokes, upTo, { scale: cv.width / K.W, mirror: mod === "zrcadlo" });
-      const pr = $("prazdne");
-      if (pr) {
-        const empty = !strokes.length || (upTo !== Infinity && vis === 0);
-        pr.hidden = !(empty && mode !== "draw");
-        pr.textContent = mode === "guess" ? `Kresba se ještě nezačala` : mode === "watch" ? "Plátno zůstalo prázdné" : "Plátno je zatím prázdné";
+    let strokes, upTo = Infinity, live = null;
+    if (rec && rec.k === k && R.drawerOf(k) === room.seat) { strokes = rec.strokes; if (rec.drawing) live = strokes[strokes.length - 1]; }
+    else {
+      const c = room.draws[k]; strokes = c ? c.strokes || [] : [];
+      if (c && c.dirty) { c.dirty = false; rdirty = true; }
+      if (mode === "guess") {
+        if (ph < 0) ph = el;   // návrat k rozehranému kolu (reload) nezačíná přehrávat od nuly
+        const was = ph;
+        if (el - ph > 250) {
+          // dohánění: prázdnou chvíli přeskočí, rozkreslenou čáru přehraje 3× rychleji
+          if (!K.head(strokes, ph)) { const ns = nextStart(strokes, ph); ph = ns == null ? el : Math.max(ph, Math.min(ns, el)); }
+          ph += dt * 3;
+        } else ph = el;
+        if (!(c && c.fin)) ph = Math.min(ph, Math.max(K.duration(strokes), was));
+        upTo = ph = Math.min(ph, el);
       }
     }
-    // hodiny a lišta
-    const sec = el / 1000, st = $("stopky");
-    if (st) st.innerHTML = stopky(sec, mode === "guess" ? null : { b: h.b, bw: h.bw || R.OKNO }) + `<b>${Math.floor(sec)}</b>`;
-    const pc = Math.min(100, sec / LIMIT * 100) + "%";
-    const j = $("jehla"); if (j) j.style.left = pc;
-    const u = $("ubehlo"); if (u) u.style.width = pc;
+    const hd = upTo === Infinity ? null : K.head(strokes, upTo);
+    const vis = upTo === Infinity ? -2 : visibleCount(strokes, upTo);
+    const hk = hd ? `${hd.x | 0},${hd.y | 0}` : "";
+    if (rdirty || vis !== lastVis || hk !== lastHead) {
+      rdirty = false; lastVis = vis; lastHead = hk;
+      if (mode === "draw" && mod === "poslepu") { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); }
+      else pt.draw(strokes, upTo, { mirror: mod === "zrcadlo", live });
+      if (hd) penTip(ctx, hd, cv.width / K.W, mod === "zrcadlo");
+      if (nodes.pr) {
+        const empty = !strokes.length || (upTo !== Infinity && vis === 0);
+        nodes.pr.hidden = !(empty && mode !== "draw");
+        nodes.pr.textContent = mode === "guess" ? `Kresba se ještě nezačala` : mode === "watch" ? "Plátno zůstalo prázdné" : "Plátno je zatím prázdné";
+      }
+    }
+    // hodiny a lišta: jen když se posune o desetinu vteřiny (innerHTML každý snímek brzdil kreslení na mobilu)
+    const sec = el / 1000, tenth = Math.floor(el / 100);
+    if (tenth !== lastTenth) {
+      lastTenth = tenth;
+      if (nodes.st) nodes.st.innerHTML = stopky(sec, mode === "guess" ? null : bet) + `<b>${Math.floor(sec)}</b>`;
+      const pc = Math.min(100, sec / LIMIT * 100) + "%";
+      if (nodes.j) nodes.j.style.left = pc;
+      if (nodes.u) nodes.u.style.width = pc;
+      // napětí sázky (vidí ji kreslíř a divák): okno se blíží, ručička je v okně, okno propadlo
+      if (mode !== "guess" && nodes.ok) {
+        const ws = sec >= bet.b + bet.bw ? "pryc" : sec >= bet.b ? "ted" : sec >= bet.b - 4 ? "blizko" : "";
+        if (ws !== winState) {
+          winState = ws;
+          nodes.ok.classList.remove("pryc", "ted", "blizko"); if (ws) nodes.ok.classList.add(ws);
+          if (nodes.st) nodes.st.classList.toggle("ted", ws === "ted");
+          if (ws === "ted" && navigator.vibrate) navigator.vibrate(25);
+        }
+      }
+    }
     ui.raf = requestAnimationFrame(tick);
   };
   ui.raf = requestAnimationFrame(tick);
+}
+// hrot pera: barevná tečka s bílým lemem tam, kde právě jede čára
+function penTip(ctx, hd, scale, mirror) {
+  const r = Math.max(7, K.TLOUSTKY[hd.s] / 2 + 4) * scale;
+  for (const x of mirror ? [hd.x, K.W - hd.x] : [hd.x]) {
+    ctx.beginPath(); ctx.arc(x * scale, hd.y * scale, r + 3 * scale, 0, Math.PI * 2); ctx.fillStyle = "rgba(23,22,31,.18)"; ctx.fill();
+    ctx.beginPath(); ctx.arc(x * scale, hd.y * scale, r, 0, Math.PI * 2); ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.beginPath(); ctx.arc(x * scale, hd.y * scale, r - 3 * scale, 0, Math.PI * 2); ctx.fillStyle = K.BARVY[hd.c] || K.BARVY[0]; ctx.fill();
+  }
+}
+function nextStart(strokes, ms) {
+  for (const s of strokes) if (s.p.length && s.p[2] * K.DT > ms) return s.p[2] * K.DT;
+  return null;
 }
 function visibleCount(strokes, upTo) {
   const lim = upTo / K.DT; let n = 0;
@@ -627,15 +699,21 @@ function bindDraw(k, h, pal) {
   ensureRecorder(k);
   let col = pal[0], size = 1;
   const cv = $("cv"), kurzor = $("kurzor"), mod = h.m;
-  const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * K.W, (e.clientY - r.top) / r.height * K.H]; };
-  const push = () => { if (room.dw && room.dw.k === k) room.dw.set({ st: K.encode(rec.strokes) }); };
+  // rozměr plátna se čte jednou na tah, ne na každý bod (getBoundingClientRect na pohyb vynucoval layout)
+  let box = null;
+  const pos = e => { const r = box || cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * K.W, (e.clientY - r.top) / r.height * K.H]; };
+  // zakódování celé kresby je drahé: při tahu nejvýš co 180 ms (zapisovač stejně posílá co 400 ms), po zvednutí hned
+  let pushT = 0;
+  const push = () => { clearTimeout(pushT); pushT = 0; if (room.dw && room.dw.k === k) room.dw.set({ st: K.encode(rec.strokes) }); };
+  const pushSoon = () => { if (!pushT) pushT = setTimeout(push, 180); };
   const showCur = (e, on) => { if (!kurzor) return; kurzor.hidden = !on; if (on) { const r = cv.getBoundingClientRect(); kurzor.style.left = (e.clientX - r.left) + "px"; kurzor.style.top = (e.clientY - r.top) + "px"; } };
   cv.addEventListener("pointerdown", e => {
     if (act !== null || !rec || e.button > 0) return;
     if (mod === "jedna" && rec.strokes.length) { toast("Jedna čára! Šipkou zpět ji smažeš a začneš znovu."); return; }
     e.preventDefault();
     act = e.pointerId; try { cv.setPointerCapture(e.pointerId); } catch {}
-    const [x, y] = pos(e); rec.start(x, y, Date.now() - h.t, col, size); rdirty = true; push(); showCur(e, true);
+    box = cv.getBoundingClientRect();
+    const [x, y] = pos(e); rec.start(x, y, Date.now() - h.t, col, size); rdirty = true; pushSoon(); showCur(e, true);
   });
   cv.addEventListener("pointermove", e => {
     if (e.pointerId !== act) return;
@@ -643,11 +721,13 @@ function bindDraw(k, h, pal) {
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     let ch = false;
     for (const ev of evs.length ? evs : [e]) { const [x, y] = pos(ev); ch = rec.move(x, y, Date.now() - h.t) || ch; }
-    if (ch) { rdirty = true; push(); }
+    if (ch) { rdirty = true; pushSoon(); }
     showCur(e, true);
   });
-  const up = e => { if (e.pointerId !== act) return; act = null; rec.end(); rdirty = true; push(); showCur(e, false); room.dw.kick(true); };
+  const up = e => { if (e.pointerId !== act) return; act = null; box = null; rec.end(); rdirty = true; push(); showCur(e, false); room.dw.kick(true); };
   cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  // iOS: dotyk na plátně nikdy neposouvá ani nezvětšuje stránku (pojistka k touch-action: none)
+  for (const t of ["touchstart", "touchmove"]) cv.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
   $("barvy").addEventListener("click", e => {
     const b = e.target.closest("[data-c]"); if (!b) return;
     col = +b.dataset.c; for (const el of $("barvy").children) el.classList.toggle("on", el === b);
@@ -655,7 +735,7 @@ function bindDraw(k, h, pal) {
   const tl = $("bTl"), tlPaint = () => { tl.firstChild.style.height = [4, 8, 14][size] + "px"; };
   tlPaint();
   tl.addEventListener("click", () => { size = (size + 1) % 3; tlPaint(); });
-  $("bUndo").addEventListener("click", () => { if (act !== null) return; rec.undo(); rdirty = true; push(); });
+  $("bUndo").addEventListener("click", () => { if (act !== null) return; rec.undo(); ui.painter && ui.painter.reset(); rdirty = true; push(); });
   $("bDone").addEventListener("click", () => {
     if (!rec.strokes.length) { toast("Nejdřív něco nakresli."); return; }
     finishDraw(k); decide();
@@ -708,6 +788,8 @@ function endGuess(k, ms, t) {
 // průběžné aktualizace bez překreslení obrazovky
 function update() {
   if (!room || !S) return;
+  const pm = /^partie:(\d+)$/.exec(ui.key);
+  if (pm) { paintFavs(R.partieOf(+pm[1])); return; }
   const m = /^(guess|watch|spect|draw):(\d+)$/.exec(ui.key);
   if (!m) return;
   const k = +m[2], gs = R.other(R.drawerOf(k)), g = (docs()[gs] || { g: {} }).g[k];
@@ -727,11 +809,13 @@ async function viewReveal(k, spect) {
   const detail = r.hit != null ? `${esc(nameOf(r.gs))}: ${s1(r.hit)} s · sázka ${okno(bet)}` : `Sázka byla ${okno(bet)}`;
   const last = R.indexInPartie(k) === R.KOL;
   const faces = { [r.dr]: r.inWin ? "radost" : r.hit != null ? "au" : "sok", [r.gs]: r.hit != null ? "radost" : "au" };
-  $("view").innerHTML = `<div class="odhaleni">
+  // napětí: ručička nejdřív doběhne k času zásahu a teprve pak padne verdikt (jen při prvním zobrazení kola)
+  const sweep = ui.swept !== room.id + ":" + k; ui.swept = room.id + ":" + k;
+  $("view").innerHTML = `<div class="odhaleni${sweep ? " sweep" : ""}">
     <div class="verdikt">${verdikt}</div>
-    <div class="stitek"><div><small>${r.hit != null ? "Slovo" : "Bylo to"}</small><div class="slovo">${esc(w)}</div></div></div>
+    <div class="stitek${h.q ? " mydva" : ""}"><div>${h.q ? `<small class="q">${ICON.srdce}${esc(h.q)}?</small>` : `<small>${r.hit != null ? "Slovo" : "Bylo to"}</small>`}<div class="slovo">${esc(w)}</div></div></div>
     <div class="scena">${postava(avOf("x"), faces.x, "#fff")}<div class="mini" id="mini"></div>${postava(avOf("o"), faces.o, "#fff")}</div>
-    ${sazkaHTML({ bet, hit: r.hit, hitOk: r.inWin, label: detail, right: r.inWin ? `<b>+${R.BONUS_OKNO} oběma</b>` : "" })}
+    ${sazkaHTML({ bet, hit: r.hit, hitOk: r.inWin, needle: sweep, label: detail, right: r.inWin ? `<b class="bonus">+${R.BONUS_OKNO} oběma</b>` : "" })}
     ${spect ? seatButtons() : `<button class="btn" id="bNext">${last ? "Výsledek partie" : R.drawerOf(k + 1) === room.seat ? "Teď kreslíš ty" : `Teď kreslí ${esc(nameOf(R.drawerOf(k + 1)))}`}</button>`}</div>`;
   $("bNext")?.addEventListener("click", () => {
     if (last) { ui.partieSeen = k; ui.key = ""; decide(); return; }
@@ -760,21 +844,82 @@ async function viewPartie(p) {
     <div class="serie">Série <b>${ser.x} : ${ser.o}</b>${ser.rem ? ` · remízy ${ser.rem}` : ""}</div>
     <div class="akce"><button class="btn" id="bOdveta">Odveta</button>${H ? `<button class="btn alt" id="bJina">Jiná hra</button>` : ""}</div>
     <h2 class="gal">Galerie partie</h2>
+    ${room.seat ? `<p class="male galtip">Klepni na obrázek, přehraje se. Srdíčkem vyber ten nejhezčí.</p>` : ""}
     <div class="galerie" id="galerie">${ks.map((k, i) => galItem(k, i, null)).join("")}</div>
     ${H ? "" : `<p class="male">Galerie zůstává uložená v odkazu hry.</p>`}</div>`;
   $("bJina")?.addEventListener("click", () => doHerny({ typ: "jina-hra" }));
   $("bOdveta").addEventListener("click", () => { setMine({ rdy: R.firstOf(p + 1) }, true); ui.partieSeen = 0; decide(); });
+  const gal = $("galerie");
+  gal.addEventListener("click", e => {
+    const it = e.target.closest("[data-gal]"); if (!it) return;
+    const k = +it.dataset.gal;
+    if (e.target.closest(".fav")) {
+      if (!room.seat) return;
+      const fav = { ...(mine().fav || {}) };
+      if (fav[p] === k) delete fav[p]; else fav[p] = k;
+      setMine({ fav }, true); paintFavs(p);
+      return;
+    }
+    lupa(k);
+  });
+  ui.gal = {};
   for (const [i, k] of ks.entries()) {
     const c = await loadDraw(k);
+    ui.gal[k] = c.strokes || [];
     const el = document.querySelector(`[data-gal="${k}"]`);
-    if (el) el.outerHTML = galItem(k, i, c.strokes || []);
+    if (el) el.outerHTML = galItem(k, i, ui.gal[k]);
+  }
+  paintFavs(p);
+}
+// karta galerie: polaroid na pásce, nálepka za trefu sázky a za nejrychlejší uhodnutí partie
+function galItem(k, i, strokes) {
+  const r = S.results[k], d = docs(), dr = R.drawerOf(k), h = d[dr].h[k] || {};
+  const rot = [-2.5, 2, -1.2, 2.4, -1.8, 1.2][i % 6], tape = [-6, 4, -3, 7, -5, 3][i % 6];
+  const p = R.partieOf(k), hits = [];
+  for (let j = R.firstOf(p); j < R.firstOf(p) + R.KOL; j++) { const x = S.results[j]; if (x && x.hit != null) hits.push(x.hit); }
+  const fastest = r && r.hit != null && r.hit === Math.min(...hits);
+  const nalepka = r && r.inWin ? `<span class="nalepka hv" title="Trefa sázky">${ICON.hvezda}</span>` : fastest ? `<span class="nalepka bl" title="Nejrychlejší">${ICON.blesk}</span>` : "";
+  return `<div class="obraz${h.q ? " mydva" : ""}" data-gal="${k}" role="button" tabindex="0" aria-label="Přehrát kresbu ${esc(word(k, d))}" style="--rot:${rot}deg;--tape:${tape}deg;--c:${COL[dr]}">
+    <i class="paska"></i>${nalepka}<div class="kr">${strokes ? K.toSVG(strokes, { mirror: h.m === "zrcadlo" }) : ""}
+    <div class="srdce-x" hidden>${ICON.srdce}</div><div class="srdce-o" hidden>${ICON.srdce}</div>
+    ${room.seat ? `<button class="fav" aria-label="Nejhezčí kresba">${ICON.srdce}</button>` : ""}</div>
+    <div class="pod"><b>${esc(word(k, d))}</b>${esc(nameOf(dr))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}</div></div>`;
+}
+// srdíčka: každý hráč smí v partii jedno; obě srdíčka na jedné kresbě = shoda
+function paintFavs(p) {
+  const d = docs();
+  for (const el of document.querySelectorAll("#galerie [data-gal]")) {
+    const k = +el.dataset.gal, fx = d.x && d.x.fav && d.x.fav[p] === k, fo = d.o && d.o.fav && d.o.fav[p] === k;
+    el.querySelector(".srdce-x").hidden = !fx; el.querySelector(".srdce-o").hidden = !fo;
+    el.classList.toggle("shoda", !!(fx && fo));
+    const b = el.querySelector(".fav"); if (b) b.classList.toggle("on", room.seat === "x" ? !!fx : !!fo);
   }
 }
-function galItem(k, i, strokes) {
-  const r = S.results[k], d = docs(), h = d[R.drawerOf(k)].h[k] || {};
-  const rot = [-2, 1.5, -1, 2, -1.5, 1][i % 6];
-  return `<div class="obraz" data-gal="${k}" style="--rot:${rot}deg;--c:${COL[R.drawerOf(k)]}"><div class="kr">${strokes ? K.toSVG(strokes, { mirror: h.m === "zrcadlo" }) : ""}</div>
-    <div class="pod"><b>${esc(word(k, d))}</b>${esc(nameOf(R.drawerOf(k)))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}${r && r.inWin ? " · trefa" : ""}</div></div>`;
+// lupa: kresba se přehraje v původním tempu (dlouhá zrychleně, nejvýš 7 s), klepnutím zavřít
+function lupa(k) {
+  const strokes = (ui.gal && ui.gal[k]) || [], d = docs(), dr = R.drawerOf(k), h = d[dr].h[k] || {}, r = S.results[k];
+  $("lupa")?.remove();
+  const el = document.createElement("div");
+  el.id = "lupa"; el.className = "lupa";
+  el.innerHTML = `<div class="lupa-ram" style="--c:${COL[dr]}"><div class="lupa-platno"><canvas id="cvLupa"></canvas></div>
+    <div class="lupa-pod">${h.q ? `<small class="q">${ICON.srdce}${esc(h.q)}?</small>` : ""}<b>${esc(word(k, d))}</b><span>${esc(nameOf(dr))} · ${r && r.hit != null ? `${esc(nameOf(R.other(dr)))} za ${s1(r.hit)} s` : "neuhodnuto"}</span></div></div>`;
+  document.body.appendChild(el);
+  // offsetWidth, ne getBoundingClientRect: rámeček právě naskakuje ze scale(0)
+  const cv = $("cvLupa"), box = cv.parentNode, dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(box.offsetWidth * dpr); cv.height = Math.round(box.offsetHeight * dpr);
+  const pt = K.painter(cv), dur = K.duration(strokes), speed = Math.max(1, dur / 7000), t0 = performance.now();
+  const frame = now => {
+    if (!el.isConnected) return;
+    const t = (now - t0) * speed;
+    pt.draw(strokes, t >= dur ? Infinity : t, { mirror: h.m === "zrcadlo" });
+    const hd = t < dur ? K.head(strokes, t) : null;
+    if (hd) penTip(pt.ctx, hd, cv.width / K.W, h.m === "zrcadlo");
+    if (t < dur + 50) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  const zavri = () => el.remove();
+  el.addEventListener("click", zavri);
+  addEventListener("keydown", function esc1(e) { if (e.key === "Escape") { zavri(); removeEventListener("keydown", esc1); } });
 }
 
 // ---------- start ----------

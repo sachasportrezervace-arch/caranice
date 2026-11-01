@@ -131,7 +131,9 @@ async function guess(p, text) { await p.fill("#fTip", text); await p.press("#fTi
   await guess(B, w1.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase());
   await waitView(B, /^reveal:1$/);
   await waitView(A, /^reveal:1$/);
-  await sleep(500);
+  const sw = await A.evaluate(() => ({ sweep: !!document.querySelector(".odhaleni.sweep"), needle: !!document.getElementById("jehla"), to: getComputedStyle(document.querySelector("#sazka .drah")).getPropertyValue("--to") }));
+  check("odhalení: ručička doběhne k zásahu, pak verdikt", sw.sweep && sw.needle && /%/.test(sw.to), JSON.stringify(sw));
+  await sleep(1800);
   await shot(B, "b5-reveal-mobil"); await shot(A, "a5-reveal-desk");
   const sz1 = await A.evaluate(() => JSON.stringify(__car.docs().x.h[1]).length + __car.drawSize(1));
   check("uhodnuto bez diakritiky velkými písmeny, oba vidí odhalení", true, `slovo ${w1}`);
@@ -186,14 +188,35 @@ async function guess(p, text) { await p.fill("#fTip", text); await p.press("#fTi
     await A.click("#bNext"); await B.click("#bNext");
     const D = k % 2 ? A : B, G = k % 2 ? B : A;
     await waitView(D, new RegExp(`^pick:${k}$`));
-    await pick(D, k % 3, 10);
+    let otazka = "";
+    if (k === 3) {
+      // My dva: otázka, jiná otázka šipkou, odpověď s předložkou, Enter rovnou kreslí
+      await D.locator("#karty .mydva").click();
+      const q0 = await D.locator("#otazka").innerText(); await D.click("#bOtazka");
+      otazka = await D.locator("#otazka").innerText();
+      check("My dva: šipka dá jinou otázku", otazka && otazka !== q0, `${q0} → ${otazka}`);
+      await D.fill("#fVlastni", "u babičky");
+      await shot(D, "mydva-pick-desk");
+      await D.press("#fVlastni", "Enter");
+    } else await pick(D, k % 3, 10);
     await waitView(D, new RegExp(`^draw:${k}$`)); await waitView(G, new RegExp(`^guess:${k}$`));
+    if (k === 3) {
+      const qG = await G.locator(".stitek .q").innerText().catch(() => "");
+      const leak = await G.evaluate(() => /babi/i.test(document.body.innerText));
+      check("My dva: hádač vidí otázku, ne odpověď", qG.trim() === otazka.trim() + "?" && !leak, `${qG} / únik ${leak}`);
+      await sleep(600); await shot(G, "mydva-guess-mobil");
+    }
     if (D === A) await drawMouse(A, mods[k - 1] === "jedna" ? SCRIBBLE : HOUSE); else await drawTouch(B, SCRIBBLE);
     if (mods[k - 1]) await shot(D, `mod-${mods[k - 1]}-${D === A ? "desk" : "mobil"}`);
     if (k === 4) { await G.click("#bNap"); await sleep(300); check("nápověda ukáže počet písmen", await G.locator("#pismena i").count() > 0); }
     if (k === 5) { await G.click("#bVzdat"); }
+    else if (k === 3) { await sleep(1500); await guess(G, "babicka"); }
     else { await sleep(1500); await guess(G, await D.evaluate(k => __car.word(k), k)); }
     await waitView(A, new RegExp(`^reveal:${k}$`)); await waitView(B, new RegExp(`^reveal:${k}$`));
+    if (k === 3) {
+      const hit3 = await A.evaluate(() => __car.docs().o.g[3]);
+      check("My dva: tip „babicka“ na „u babičky“ projde", hit3 && hit3.hit != null, JSON.stringify(hit3 && hit3.tips));
+    }
   }
   check("modifikátory partie 1 se v kolech objevily", mods.filter(Boolean).length === 3, mods.join(","));
 
@@ -207,6 +230,27 @@ async function guess(p, text) { await p.fill("#fTip", text); await p.press("#fTi
   check("galerie partie má 6 kreseb", gal === 6, String(gal));
   const ser = (await st(A)).series;
   check("série započítala partii", ser.x + ser.o + ser.rem === 1, JSON.stringify(ser));
+  // srdíčka: A dá srdce kresbě 1, B to uvidí; když dá srdce i B, je to shoda
+  await A.locator('#galerie [data-gal="1"] .fav').click();
+  await B.waitForFunction(() => { const e = document.querySelector('#galerie [data-gal="1"] .srdce-x'); return e && !e.hidden; }, null, { timeout: 8000 }).catch(() => {});
+  const hB = await B.evaluate(() => !document.querySelector('#galerie [data-gal="1"] .srdce-x').hidden);
+  await B.locator('#galerie [data-gal="1"] .fav').click();
+  await A.waitForFunction(() => document.querySelector('#galerie [data-gal="1"]').classList.contains("shoda"), null, { timeout: 8000 }).catch(() => {});
+  const shoda = await A.evaluate(() => document.querySelector('#galerie [data-gal="1"]').classList.contains("shoda"));
+  check("galerie: srdíčko soupeře se ukáže, dvě srdíčka = shoda", hB && shoda, `B vidí ${hB}, shoda ${shoda}`);
+  // lupa: klepnutí na kresbu ji přehraje, klepnutí zavře
+  await B.locator('#galerie [data-gal="2"] .kr').click();
+  await B.waitForSelector("#lupa canvas");
+  const lu0 = await B.evaluate(() => { const c = document.getElementById("cvLupa"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i]) n++; return n; });
+  await sleep(2500);
+  const lu1 = await B.evaluate(() => { const c = document.getElementById("cvLupa"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 16) if (d[i]) n++; return n; });
+  await shot(B, "b9-lupa-mobil");
+  await B.locator("#lupa").click(); await sleep(200);
+  const luGone = await B.evaluate(() => !document.getElementById("lupa"));
+  // krátká kresba se pod zátěží stihne přehrát dřív, než ji test změří: hlídá se výsledná kresba, tempo hlídá logika.test (hrot)
+  check("galerie: lupa kresbu přehraje a klepnutím zmizí", lu1 >= lu0 && lu1 > 50 && luGone, `${lu0} → ${lu1}, zavřeno ${luGone}`);
+  await sleep(1200);
+  await shot(A, "a8-partie-desk-srdce"); await shot(B, "b9-partie-mobil-srdce");
 
   // 8) odveta: kolo 7 kreslí B (partie začínají střídavě), slova se neopakují
   const used1 = await A.evaluate(() => [1, 2, 3, 4, 5, 6].map(k => __car.word(k)));

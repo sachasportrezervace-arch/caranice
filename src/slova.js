@@ -52,6 +52,26 @@ export const OBTIZNOSTI = [
   { id: "tezka", nazev: "Těžké", bonus: 2 },
 ];
 
+// Kategorie „My dva“: kreslíř vybere otázku o vás dvou a sám napíše odpověď, kterou nakreslí.
+// Otázku hádač vidí (je to nápověda), odpověď ne. Bez rodu ve slovesech, ať sedí komukoli. Otazník přidává hra.
+export const MYDVA = [
+  "Kde jsme se poprvé viděli",
+  "Co na mně máš nejradši",
+  "Kam spolu pojedeme",
+  "Kde bylo naše první rande",
+  "Čím tě vždycky rozesměju",
+  "Co spolu nejradši jíme",
+  "Jak ti v duchu říkám",
+  "Kam tě vezmu na příští rande",
+  "Co uděláme, až se uvidíme",
+  "Co je naše tajná věc",
+  "Co mi na tobě nejvíc sluší",
+  "Na co se s tebou těším",
+  "Jakou mám podle tebe superschopnost",
+  "Jaké zvíře bychom spolu měli",
+  "Co nás dva vystihuje",
+];
+
 // tři návrhy na kolo, jeden z každé obtížnosti, bez slov, která už v partii padla
 export function navrhy(rand, pouzita = new Set()) {
   return OBTIZNOSTI.map(o => {

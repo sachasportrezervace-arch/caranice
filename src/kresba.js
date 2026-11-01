@@ -99,6 +99,22 @@ export function duration(strokes) {
 }
 export const pointCount = strokes => strokes.reduce((a, st) => a + st.p.length / 3, 0);
 
+// viditelné body tahu v čase lim (jednotky DT): celé body a dopočtený bod mezi posledním a dalším,
+// takže dlouhá rovná čára (po zjednodušení dva body) se při přehrávání táhne, ne objeví naráz
+function visiblePts(p, lim) {
+  const all = p.length / 3;
+  let n = 0;
+  while (n < all && p[n * 3 + 2] <= lim) n++;
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++) { xs.push(p[i * 3]); ys.push(p[i * 3 + 1]); }
+  if (n && n < all) {
+    const t0 = p[n * 3 - 1], t1 = p[n * 3 + 2], f = t1 > t0 ? (lim - t0) / (t1 - t0) : 0;
+    if (f > 0) { xs.push(p[n * 3 - 3] + (p[n * 3] - p[n * 3 - 3]) * f); ys.push(p[n * 3 - 2] + (p[n * 3 + 1] - p[n * 3 - 2]) * f); }
+  }
+  return [xs, ys];
+}
+const lastT = st => st.p.length ? st.p[st.p.length - 1] : 0;
+
 // vykreslí tahy do času upTo (ms; Infinity = celé). mirror = zrcadlová kopie podle svislé osy.
 export function paint(ctx, strokes, upTo = Infinity, opt = {}) {
   const { scale = 1, mirror = false, palette = BARVY } = opt;
@@ -107,12 +123,11 @@ export function paint(ctx, strokes, upTo = Infinity, opt = {}) {
   for (const st of strokes) {
     const p = st.p;
     if (!p.length || p[2] > lim) continue;
-    let n = 0;
-    while (n < p.length / 3 && p[n * 3 + 2] <= lim) n++;
+    const [xs, ys] = visiblePts(p, lim), n = xs.length;
     ctx.strokeStyle = ctx.fillStyle = palette[st.c] || palette[0];
     ctx.lineWidth = TLOUSTKY[st.s] * scale;
     for (const m of mirror ? [false, true] : [false]) {
-      const X = i => (m ? GX - p[i * 3] : p[i * 3]) * 2 * scale, Y = i => p[i * 3 + 1] * 2 * scale;
+      const X = i => (m ? GX - xs[i] : xs[i]) * 2 * scale, Y = i => ys[i] * 2 * scale;
       if (n === 1) { ctx.beginPath(); ctx.arc(X(0), Y(0), ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); continue; }
       ctx.beginPath(); ctx.moveTo(X(0), Y(0));
       for (let i = 1; i < n - 1; i++) ctx.quadraticCurveTo(X(i), Y(i), (X(i) + X(i + 1)) / 2, (Y(i) + Y(i + 1)) / 2);
@@ -120,6 +135,46 @@ export function paint(ctx, strokes, upTo = Infinity, opt = {}) {
       ctx.stroke();
     }
   }
+}
+
+// hrot pera při přehrávání: kde se právě kreslí (tah začal a ještě nedoběhl), jinak null
+export function head(strokes, upTo) {
+  const lim = upTo / DT;
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const st = strokes[i], p = st.p;
+    if (!p.length || p[2] > lim) continue;
+    if (lastT(st) <= lim) return null;
+    const [xs, ys] = visiblePts(p, lim);
+    return { x: xs[xs.length - 1] * 2, y: ys[ys.length - 1] * 2, c: st.c, s: st.s };
+  }
+  return null;
+}
+
+// Malíř s vrstvou: hotové tahy leží v bitmapě a každý snímek se kreslí jen ten rozpracovaný.
+// Na mobilu to drží 60 fps i u kresby se stovkou tahů. reset() po zpět/smazání (pole tahů se mění na místě).
+export function painter(cv) {
+  const ctx = cv.getContext("2d");
+  const base = document.createElement("canvas"), bctx = base.getContext("2d");
+  let arr = null, n = 0, key = "";
+  return {
+    ctx,
+    reset() { arr = null; },
+    draw(strokes, upTo = Infinity, opt = {}) {
+      const { mirror = false, palette = BARVY, live = null } = opt;
+      const scale = cv.width / W, lim = upTo / DT;
+      const k = cv.width + "x" + cv.height + (mirror ? "m" : "") + palette.join();
+      if (k !== key || arr !== strokes || n > strokes.length) {
+        key = k; arr = strokes; n = 0;
+        base.width = cv.width; base.height = cv.height;
+      }
+      let done = n;
+      while (done < strokes.length && strokes[done] !== live && strokes[done].p.length && lastT(strokes[done]) <= lim) done++;
+      if (done > n) { paint(bctx, strokes.slice(n, done), Infinity, { scale, mirror, palette }); n = done; }
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+      if (n) ctx.drawImage(base, 0, 0);
+      if (done < strokes.length) paint(ctx, strokes.slice(done), upTo, { scale, mirror, palette });
+    },
+  };
 }
 
 // SVG verze pro galerii a miniatury (ostrá v každé velikosti)

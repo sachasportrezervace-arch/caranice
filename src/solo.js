@@ -46,7 +46,12 @@ export function createSolo(H) {
     $("bZpet").addEventListener("click", menu);
   }
   const modChip = mod => mod ? `<div class="mod">${ICON.mod[mod]}${MODY[mod].nazev}</div>` : "";
+  // hodiny a lišta jen po desetině vteřiny (innerHTML každý snímek brzdil kreslení na mobilu)
+  let lastTenth = -1;
   const tick = (sec, bar) => {
+    const tenth = Math.floor(sec * 10);
+    if (tenth === lastTenth && $("stopky")?.firstChild) return;
+    lastTenth = tenth;
     const st = $("stopky"); if (st) st.innerHTML = stopky(sec, null) + `<b>${Math.floor(sec)}</b>`;
     const pc = Math.min(100, bar) + "%";
     const j = $("jehla"); if (j) j.style.left = pc;
@@ -200,14 +205,15 @@ export function createSolo(H) {
     $("view").innerHTML = `<div class="round">${desk ? sideL : ""}<div class="stred">${stitek}${platno}${bar}${tools}</div>${desk ? sideR : ""}</div>`;
     fitCanvas();
     bindDraw();
-    const cv = $("cv"), ctx = cv.getContext("2d"); let lastW = 0;
+    const cv = $("cv"), pt = K.painter(cv), ctx = pt.ctx; let lastW = 0;
+    g.painter = pt;
     const frame = () => {
       if (Z.cur !== g || ui.key !== "solo:draw" || !$("cv")) return;
       const el = g.t0 ? Math.min(LIMIT * 1000, Date.now() - g.t0) : 0;
       if (g.dirty || cv.width !== lastW) {
         g.dirty = false; lastW = cv.width;
-        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
-        if (mod !== "poslepu") K.paint(ctx, g.rec.strokes, Infinity, { scale: cv.width / K.W, mirror: mod === "zrcadlo" });
+        if (mod !== "poslepu") pt.draw(g.rec.strokes, Infinity, { mirror: mod === "zrcadlo", live: g.act !== null ? g.rec.strokes[g.rec.strokes.length - 1] : null });
+        else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); }
       }
       tick(el / 1000, el / (LIMIT * 10));
       if (g.t0 && el >= LIMIT * 1000) { finishDraw(true); return; }
@@ -236,6 +242,7 @@ export function createSolo(H) {
     });
     const up = e => { if (e.pointerId !== g.act) return; g.act = null; rec.end(); g.dirty = true; showCur(e, false); };
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    for (const t of ["touchstart", "touchmove"]) cv.addEventListener(t, e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
     $("barvy").addEventListener("click", e => {
       const b = e.target.closest("[data-c]"); if (!b) return;
       g.col = +b.dataset.c; for (const el of $("barvy").children) el.classList.toggle("on", el === b);
@@ -243,7 +250,7 @@ export function createSolo(H) {
     const tl = $("bTl"), tlPaint = () => { tl.firstChild.style.height = [4, 8, 14][g.size] + "px"; };
     tlPaint();
     tl.addEventListener("click", () => { g.size = (g.size + 1) % 3; tlPaint(); });
-    $("bUndo").addEventListener("click", () => { if (g.act !== null) return; rec.undo(); g.dirty = true; });
+    $("bUndo").addEventListener("click", () => { if (g.act !== null) return; rec.undo(); g.painter && g.painter.reset(); g.dirty = true; });
     $("bDone").addEventListener("click", () => finishDraw(false));
   }
 
