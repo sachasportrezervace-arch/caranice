@@ -12,7 +12,19 @@ PŘEVZATO 31. 10.
 - Async přehrávání: dopočtený bod mezi body (rovná čára se táhne), hrot pera v barvě čáry, přehrávací hlava u živé hry dohání zpoždění sítě 3× rychleji místo skoku a přeskakuje prázdné chvíle.
 - Galerie: polaroidy na pásce v barvě kreslíře, nálepka hvězda (trefa sázky) a blesk (nejrychlejší uhodnutí), klepnutí přehraje kresbu v lupě (max 7 s), srdíčko „nejhezčí“ od každého hráče (barva hráče, `fav` v dokumentu hráče), dvě srdíčka na jedné kresbě = zlatý rámeček.
 - My dva: karta s otázkou o vás dvou (15 otázek, šipkou jiná, použité na konec), odpověď tajná, Enter rovnou kreslí, karta se na mobilu posune nad klávesnici. Hádač vidí otázku ve štítku (`h.q`), odhalení i lupa taky.
-- Testy: `logika.test.mjs` +9 (shoda, hrot/interpolace), `duel.cjs` +6 (odhalení sweep, My dva otázka/únik/tolerance, srdíčka shoda, lupa). – dodělává session na účtu P, jiná session sem nepíše.
+- Testy: `logika.test.mjs` +9 (shoda, hrot/interpolace), `duel.cjs` +6 (odhalení sweep, My dva otázka/únik/tolerance, srdíčka shoda, lupa), `solo.cjs` +28 (iPhone na šířku 844×390 a 750×342).
+- Design-eye 3 kola: 1 NE (nadpisové písmo Lilita One nemá č ř ě ů ň ť ď → dokresleny do `fonts/lilita-ext.woff2`, OFL, interní jméno „Caranice Display“; toast nahoře; nenápadný popisek prázdného plátna; srdíčka mimo kresbu; lišta nepřetéká), 2 NE (na šířku nehratelné → dvousloupcové rozvržení; galerie přetékala; hlasovací srdíčko v popisku), 3 **ANO, profi indie hra** (živé rendery s razítkem @cd01907).
+- Commity 8884758, 642d44e, cd01907 (push na `main`, Pages nasazeno).
+
+**Ověřeno**
+- Lokálně (server 8810): `node tests/logika.test.mjs` 35 PASS exit 0; `node tests/duel.cjs` 32 PASS exit 0; `node tests/solo.cjs` 116 PASS exit 0; `node tests/herna.cjs` 27 PASS exit 0.
+- Živě po cd01907: `node tests/duel.cjs "https://sachasportrezervace-arch.github.io/caranice/?limit=30"` 32 PASS exit 0 (přenos 1,4 s); `node tests/solo.cjs <živá URL>` 116 PASS exit 0; `node tests/herna.cjs <živá URL>` 27 PASS exit 0. Jeden dřívější živý běh duelu měl 2 FAIL (přenos 5,3 s, async 0 → 0) při 97–99 % CPU od souběžného prohlížeče design-eye, opakovaný běh bez zátěže 32 PASS.
+
+**NEOVĚŘENO**
+- Skutečný telefon v ruce (plynulost prstu jen kódem a emulací WebKit, pinch-zoom blok `gesturestart` jen v kódu), softwarová klávesnice na šířku, živá Herna (jen maketa rodiče), galerie a My dva na šířku. 3 živé partie Mark vs. Radka ve 2 prohlížečích jsem nehrál ručně, pokrývá je duel test (6 kol + odveta + async + divák).
+
+**Dál**
+- Galerie na mobilu: „Mark · neuh…“ se ořezává (kratší „nic“), na kartě se shodou je srdíček a nálepek moc (hlasy jako tečky), na šířku zarovnat pravý sloupec nahoru. Výběr slova na šířku: karta My dva až pod okrajem (scroll). – dodělává session na účtu P, jiná session sem nepíše.
 
 ## 31. 10. 2026 – napojení na Hernu (protokol 1)
 
