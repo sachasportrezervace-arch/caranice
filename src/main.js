@@ -59,9 +59,9 @@ function stopky(sec, bet) {
 function sazkaHTML(o) {
   const pc = s => (Math.max(0, Math.min(LIMIT, s)) / LIMIT * 100).toFixed(2) + "%";
   const ticks = [0, LIMIT / 3, LIMIT * 2 / 3, LIMIT].map(v => `<span>${Math.round(v)}${v === LIMIT ? " s" : ""}</span>`).join("");
-  const win = o.bet ? `<div class="okno${o.secret ? " tajne" : ""}" style="left:${pc(o.bet.b)};width:calc(${pc(o.bet.b + o.bet.bw)} - ${pc(o.bet.b)})"></div>` : "";
+  const win = o.bet ? `<div class="okno${o.secret ? " tajne" : ""}" style="left:min(${pc(o.bet.b)}, calc(100% - 24px));width:calc(${pc(o.bet.b + o.bet.bw)} - ${pc(o.bet.b)})"></div>` : "";
   const to = o.hit !== undefined ? pc(o.hit == null ? LIMIT : o.hit / 1000) : "";
-  const hit = o.hit !== undefined ? `<div class="zasah${o.hitOk ? " ok" : ""}" style="left:${to}">${o.hit == null ? ICON.ne : ICON.ok}</div>` : "";
+  const hit = o.hit !== undefined ? `<div class="zasah${o.hitOk ? " ok" : ""}" style="left:clamp(18px, ${to}, calc(100% - 18px))">${o.hit == null ? ICON.ne : ICON.ok}</div>` : "";
   return `<div class="sazka" id="sazka"><div class="popis"><span>${o.label || ""}</span><span>${o.right || ""}</span></div>
     <div class="drah${o.hitOk ? " trefa" : ""}"${to ? ` style="--to:${to}"` : ""}><div class="ubehlo" id="ubehlo" style="width:0"></div>${win}${o.needle ? `<div class="jehla" id="jehla" style="left:0"></div>` : ""}${hit}${o.slider || ""}</div>
     <div class="osa-s">${ticks}</div></div>`;
@@ -881,9 +881,8 @@ function galItem(k, i, strokes) {
   const nalepka = r && r.inWin ? `<span class="nalepka hv" title="Trefa sázky">${ICON.hvezda}</span>` : fastest ? `<span class="nalepka bl" title="Nejrychlejší">${ICON.blesk}</span>` : "";
   return `<div class="obraz${h.q ? " mydva" : ""}" data-gal="${k}" role="button" tabindex="0" aria-label="Přehrát kresbu ${esc(word(k, d))}" style="--rot:${rot}deg;--tape:${tape}deg;--c:${COL[dr]}">
     <i class="paska"></i>${nalepka}<div class="kr">${strokes ? K.toSVG(strokes, { mirror: h.m === "zrcadlo" }) : ""}
-    <div class="srdce-x" hidden>${ICON.srdce}</div><div class="srdce-o" hidden>${ICON.srdce}</div>
     ${room.seat ? `<button class="fav" aria-label="Nejhezčí kresba">${ICON.srdce}</button>` : ""}</div>
-    <div class="pod"><b>${esc(word(k, d))}</b>${esc(nameOf(dr))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}</div></div>`;
+    <div class="pod"><b>${esc(word(k, d))}</b><div class="radek"><span class="kdo">${esc(nameOf(dr))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}</span><span class="srdce-x" hidden>${ICON.srdce}</span><span class="srdce-o" hidden>${ICON.srdce}</span></div></div></div>`;
 }
 // srdíčka: každý hráč smí v partii jedno; obě srdíčka na jedné kresbě = shoda
 function paintFavs(p) {
@@ -902,7 +901,7 @@ function lupa(k) {
   const el = document.createElement("div");
   el.id = "lupa"; el.className = "lupa";
   el.innerHTML = `<div class="lupa-ram" style="--c:${COL[dr]}"><div class="lupa-platno"><canvas id="cvLupa"></canvas></div>
-    <div class="lupa-pod">${h.q ? `<small class="q">${ICON.srdce}${esc(h.q)}?</small>` : ""}<b>${esc(word(k, d))}</b><span>${esc(nameOf(dr))} · ${r && r.hit != null ? `${esc(nameOf(R.other(dr)))} za ${s1(r.hit)} s` : "neuhodnuto"}</span></div></div>`;
+    <div class="lupa-pod">${h.q ? `<small class="q">${ICON.srdce}${esc(h.q)}?</small>` : ""}<b>${esc(word(k, d))}</b><span>Kreslí ${esc(nameOf(dr))} · ${r && r.hit != null ? `uhodnuto za ${s1(r.hit)} s` : "neuhodnuto"}</span></div></div>`;
   document.body.appendChild(el);
   // offsetWidth, ne getBoundingClientRect: rámeček právě naskakuje ze scale(0)
   const cv = $("cvLupa"), box = cv.parentNode, dpr = Math.min(2, devicePixelRatio || 1);
