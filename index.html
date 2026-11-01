@@ -236,7 +236,7 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 .titul span { font-size: 13px; font-weight: 700; }
 .titul.x { box-shadow: inset 6px 0 0 var(--x); padding-left: 16px; }
 .titul.o { box-shadow: inset 6px 0 0 var(--o); padding-left: 16px; }
-.galerie { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: min(560px, 100%); }
+.galerie { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: min(560px, 100%); }
 .obraz { background: #fff; border-radius: 12px; overflow: hidden; color: var(--ink); text-align: left; transform: rotate(var(--rot, 0deg)); }
 .obraz .kr { aspect-ratio: 4/5; }
 .obraz .kr svg { width: 100%; height: 100%; display: block; }
@@ -287,7 +287,7 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
   .konec h2 { font-size: 56px; }
   .konec h2.gal { font-size: 26px; }
   .vysledek .postava { width: 104px; } .vysledek .sk { font-size: 46px; }
-  .galerie { grid-template-columns: repeat(6, 1fr); gap: 12px; width: min(1120px, 100%); }
+  .galerie { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; width: min(1120px, 100%); }
   .obraz .pod { font-size: 14px; padding: 5px 8px 7px; } .obraz .pod b { font-size: 17px; }
 
   /* úvod, pozvánka, odkaz: dva sloupce jako plakát */
@@ -327,6 +327,51 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
   .round .tipy { min-height: 24px; }
   .round .strana-p .hadat, .round .strana-p .tipy { display: none; }
 }
+/* telefon na šířku: plátno vlevo co nejvyšší, vpravo štítek, sázka, nástroje nebo tip */
+@media (max-height: 559px) and (orientation: landscape) {
+  #app { padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: max(6px, env(safe-area-inset-bottom)); gap: 4px; }
+  #view { gap: 6px; }
+  .hrac .hlava { width: 36px; height: 36px; }
+  .hrac .sk { font-size: 24px; } .hrac .jm { font-size: 13px; }
+  .mid { flex-direction: row; gap: 12px; } .mid .kolo { font-size: 12px; }
+  .stopky svg { width: 30px; height: 30px; } .stopky b { font-size: 22px; }
+  .round .stred { display: grid; grid-template-columns: calc((var(--vh) - 56px) * .8) minmax(0, 400px); grid-template-rows: 1fr repeat(5, auto) 1fr; column-gap: 14px; row-gap: 6px; justify-content: center; align-content: stretch; }
+  .round .stred::before { content: ""; grid-column: 2; grid-row: 1; }
+  .round .stred > * { grid-column: 2; min-width: 0; }
+  .round .stred > .plocha { grid-column: 1; grid-row: 1 / -1; min-height: 0; }
+  .round .stitek { min-height: 46px; padding: 4px 12px; }
+  .round .stitek .slovo { font-size: 26px; }
+  .round .sazka .popis { margin-bottom: 6px; }
+  .round .hadat input, .round .hadat .btn, .round .hadat .ik { height: 44px; min-height: 44px; }
+  .round .hadat .ik { width: 44px; }
+  .round .tipy { min-height: 22px; flex-wrap: wrap; overflow: hidden; max-height: 54px; }
+  .panel { padding: 0 4px; gap: 10px; }
+  .vyber { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; row-gap: 8px; align-content: start; justify-items: stretch; }
+  .vyber > * { grid-column: 2; width: auto; min-width: 0; justify-self: stretch; }
+  .vyber > .karty { grid-column: 1; grid-row: 1 / span 8; }
+  .vyber h2 { font-size: 22px; text-align: left; }
+  .vyber .sazka .popis { margin-bottom: 12px; }
+  .vyber .betinfo, .vyber .modinfo { width: auto; }
+  .vyber .karta { min-height: 46px; padding: 6px 14px; }
+  .vyber .karta .slovo { font-size: 22px; }
+  .vyber .btn { width: 100%; }
+  .odhaleni { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; row-gap: 5px; align-content: safe center; justify-items: stretch; overflow: auto; }
+  .odhaleni > * { grid-column: 2; min-width: 0; width: auto; }
+  .odhaleni > .scena { grid-column: 1; grid-row: 1 / span 8; align-self: center; justify-content: center; }
+  .odhaleni .verdikt { font-size: 36px; line-height: .95; text-align: left; }
+  .odhaleni .osa-s { display: none; }
+  .odhaleni .stitek { min-height: 0; padding: 4px 12px; }
+  .odhaleni .stitek .slovo { font-size: 26px; }
+  .odhaleni .sazka .popis { margin-bottom: 4px; }
+  .odhaleni .drah { height: 22px; }
+  .odhaleni .pomoc { padding: 3px 10px; font-size: 13px; }
+  .odhaleni .scena .postava { width: min(70px, 14vw); }
+  .odhaleni .mini { width: min(150px, calc((var(--vh) - 90px) * .8)); }
+  .odhaleni .detail, .odhaleni .pomoc { justify-self: start; }
+  .odhaleni .btn { min-height: 42px; }
+  .odhaleni .odkazbtn { justify-self: start; padding: 2px 6px; }
+}
+@media (max-width: 560px) { .obraz .kdo { font-size: 11px; } }
 @media (max-width: 370px) {
   .barva { width: 26px; height: 26px; } .ik { width: 38px; height: 38px; } .btn.sm { padding: 0 12px; font-size: 18px; }
   .hrac .hlava { width: 42px; height: 42px; }
@@ -376,13 +421,13 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 @keyframes pop { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* galerie: polaroidy na pásce, nálepky, srdíčka hráčů, lupa s přehráním */
-.galerie { padding: 10px 10px 0; }
+.galerie { padding: 12px 12px 0; }
 .obraz .kr { position: relative; }
 .galtip { margin-top: -6px; }
-.obraz { position: relative; overflow: visible; padding: 6px 6px 0; cursor: pointer; box-shadow: 0 3px 0 rgba(23,22,31,.22); transition: transform .2s; }
+.obraz { position: relative; overflow: visible; padding: 5px 5px 0; cursor: pointer; box-shadow: 0 3px 0 rgba(23,22,31,.22); transition: transform .2s; }
 .obraz:active { transform: rotate(var(--rot)) scale(.97); }
 .obraz .kr { border-radius: 6px; overflow: hidden; background: #FAFAF7; }
-.obraz .pod { border-top: 0; padding: 5px 4px 7px; }
+.obraz .pod { border-top: 0; padding: 5px 2px 7px 4px; }
 .obraz .paska { position: absolute; left: 50%; top: -9px; width: 46%; height: 18px; margin-left: -23%; background: var(--c); opacity: .85; transform: rotate(var(--tape)); border-radius: 2px; box-shadow: 0 1px 0 rgba(23,22,31,.15); }
 .obraz .nalepka { position: absolute; right: -7px; top: -7px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; transform: rotate(12deg); z-index: 1; box-shadow: 0 0 0 2.5px #fff; }
 .obraz .nalepka svg { width: 18px; height: 18px; }
@@ -390,14 +435,16 @@ body.odhal .stitek, body.odhal .drah { box-shadow: none; }
 .obraz .nalepka.bl { background: var(--ink); color: var(--zluta); }
 .obraz .pod { display: flex; flex-direction: column; min-width: 0; }
 .obraz .radek { display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
-.obraz .kdo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.obraz .srdce-x, .obraz .srdce-o { flex: none; width: 17px; height: 17px; animation: pop .35s cubic-bezier(.3,1.7,.5,1) both; pointer-events: none; }
+.obraz .kdo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obraz .srdce-x, .obraz .srdce-o { flex: none; width: 15px; height: 15px; margin-top: 1px; animation: pop .35s cubic-bezier(.3,1.7,.5,1) both; pointer-events: none; }
 .obraz .srdce-x[hidden], .obraz .srdce-o[hidden] { display: none; }
 .obraz .srdce-x { color: var(--x); } .obraz .srdce-o { color: var(--o); }
 .obraz .srdce-x svg, .obraz .srdce-o svg { width: 100%; height: 100%; }
 .obraz.shoda { box-shadow: 0 0 0 3px var(--zluta), 0 3px 0 rgba(23,22,31,.22); }
-.obraz .fav { position: absolute; right: 0; bottom: 0; width: 36px; height: 36px; display: grid; place-items: center; color: rgba(23,22,31,.25); }
-.obraz .fav svg { width: 22px; height: 22px; }
+.obraz .slr { display: flex; align-items: flex-start; gap: 3px; min-width: 0; }
+.obraz .slr b { flex: 1; min-width: 0; }
+.obraz .fav { position: static; flex: none; width: 32px; height: 32px; margin: -9px -8px -9px -6px; display: grid; place-items: center; color: rgba(23,22,31,.25); }
+.obraz .fav svg { width: 20px; height: 20px; }
 .obraz .fav.on { color: var(--x); }
 .lupa { position: fixed; inset: 0; z-index: 30; background: rgba(23,22,31,.72); display: grid; place-items: center; padding: 20px; animation: fade .2s both; cursor: zoom-out; }
 .lupa-ram { background: #fff; color: var(--ink); border-radius: 16px; padding: 10px 10px 14px; width: min(420px, 100%, calc((var(--vh) - 160px) * .8)); transform: rotate(-1.5deg); box-shadow: 0 8px 0 rgba(0,0,0,.25); animation: pop .3s cubic-bezier(.3,1.5,.5,1) both; }

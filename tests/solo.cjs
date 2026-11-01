@@ -1,4 +1,4 @@
-// Sólo režim (trénink) v Chromiu desktop 1440×900 a WebKitu iPhone 13:
+// Sólo režim (trénink) v Chromiu desktop 1440×900 a WebKitu iPhone 13 (na výšku i na šířku 844×390 a 750×342):
 //  - úvod → „Zkusit sám“ → nabídka, adresa #solo přímo, tlačítko Zpět prohlížeče
 //  - Hádání: kresba se přehrává v čase (inkoust roste), tip bez diakritiky velkými písmeny → odhalení s časem, vzdání,
 //    8 ukázek se v sezení neopakují, mód Zrcadlově
@@ -244,9 +244,67 @@ async function suite(label, browserType, ctxOpts, touch) {
   await browser.close();
 }
 
+// iPhone na šířku (WebKit): plátno vlevo, vpravo štítek, lišta, nástroje / tip; vše bez posunu stránky
+async function landscape(label, vp) {
+  const check = (name, ok, extra = "") => { ok ? pass++ : fail++; console.log(`${ok ? "PASS" : "FAIL"}  [${label}] ${name}${extra ? "  (" + extra + ")" : ""}`); };
+  const browser = await webkit.launch();
+  const ctx = await browser.newContext({ ...devices["iPhone 13 landscape"], viewport: vp });
+  const p = await ctx.newPage();
+  const errs = [];
+  p.on("pageerror", e => errs.push("pageerror: " + e.message));
+  p.on("console", m => m.type() === "error" && !/404/.test(m.text()) && errs.push("console: " + m.text().slice(0, 200)));
+  const shot = name => p.screenshot({ path: path.join(SH, `solo-${label}-${name}.png`) });
+  const waitView = re => p.waitForFunction(re => window.__car && new RegExp(re).test(__car.state().view), re.source, { timeout: 15000 });
+  const inView = sels => p.evaluate(sels => sels.map(q => { const e = document.querySelector(q); if (!e) return q + ": chybí"; const r = e.getBoundingClientRect(); return r.top >= -1 && r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1 && r.width > 0 ? "" : `${q}: ${Math.round(r.top)}–${Math.round(r.bottom)} z ${innerHeight}, ${Math.round(r.left)}–${Math.round(r.right)} z ${innerWidth}`; }).filter(Boolean), sels);
+  const geo = () => p.evaluate(() => { const cv = document.getElementById("platno").getBoundingClientRect(), st = document.querySelector(".stitek").getBoundingClientRect(); return { sh: document.documentElement.scrollHeight, ih: innerHeight, sy: scrollY, cvH: Math.round(cv.height), cvR: Math.round(cv.right), stL: Math.round(st.left) }; });
+  const round = async (name, sels) => {
+    const g = await geo();
+    check(`${name}: plátno aspoň 200 px vysoké a vlevo od štítku`, g.cvH >= 200 && g.cvR <= g.stL + 1, JSON.stringify(g));
+    const bad = await inView(sels); check(`${name}: ovládání celé ve viewportu`, !bad.length, bad.join("; "));
+    check(`${name}: stránka se neposouvá`, g.sh <= g.ih + 1 && g.sy === 0, JSON.stringify({ sh: g.sh, ih: g.ih, sy: g.sy }));
+  };
+  const drawTouch = shapes => p.evaluate(async shapes => {
+    const cv = document.getElementById("cv"), r = cv.getBoundingClientRect(), sl = ms => new Promise(f => setTimeout(f, ms));
+    const ev = (type, x, y) => cv.dispatchEvent(new PointerEvent(type, { pointerId: 11, pointerType: "touch", isPrimary: true, bubbles: true, cancelable: true, clientX: r.left + x * r.width, clientY: r.top + y * r.height, button: type === "pointermove" ? -1 : 0, buttons: type === "pointerup" ? 0 : 1 }));
+    for (const pts of shapes) { ev("pointerdown", ...pts[0]); for (const [x, y] of pts.slice(1)) { ev("pointermove", x, y); await sl(16); } ev("pointerup", ...pts[pts.length - 1]); await sl(80); }
+  }, shapes);
+
+  await p.goto(withHash("solo"));
+  await waitView(/^solo:menu$/);
+  const bm = await inView(["#bHadat", "#bKreslit"]); check("nabídka: obě volby bez posunu", !bm.length, bm.join("; "));
+  await shot("1-nabidka");
+  await p.click("#bHadat"); await waitView(/^solo:guess$/); await sleep(1800);
+  await round("hádání", ["#platno", "#fTip", "#bVzdat", "#sazka", "#bNap"]);
+  await shot("2-hadani");
+  const w = await p.evaluate(() => __car.solo.word());
+  await p.focus("#fTip"); await sleep(200);
+  check("hádání: po fokusu na tip se stránka nezasekne (bez posunu)", await p.evaluate(() => scrollY === 0 && document.activeElement.id === "fTip"));
+  await p.fill("#fTip", noDia(w).toUpperCase()); await p.press("#fTip", "Enter");
+  await waitView(/^solo:reveal$/); await sleep(450);
+  const br = await inView(["#bDalsi", "#bVyzvat", ".stitek", "#mini", ".verdikt"]); check("odhalení: tlačítka i kresba bez posunu", !br.length, br.join("; "));
+  check("odhalení: stránka se neposouvá", await p.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && scrollY === 0));
+  await shot("3-odhaleni");
+  await p.goto(withHash("solo"));
+  await p.reload(); await waitView(/^solo:menu$/);
+  await p.click("#bKreslit"); await waitView(/^solo:draw$/);
+  await drawTouch(HOUSE); await drawTouch(SUN); await sleep(200);
+  await round("kreslení", ["#platno", "#bDone", "#bUndo", "#sazka", ".barvy .barva:first-child", ".barvy .barva:last-child"]);
+  const nb = await p.locator(".barvy .barva").count(), bb = await inView(Array.from({ length: nb }, (_, i) => `.barvy .barva:nth-child(${i + 1})`));
+  check(`kreslení: všech ${nb} barev palety celých ve viewportu`, nb >= 4 && !bb.length, bb.join("; "));
+  await shot("4-kresleni");
+  await p.click("#bDone"); await waitView(/^solo:play$/); await sleep(400);
+  const bp = await inView(["#bDalsi", "#bVyzvat", "#kontroly", "#bZnovu", "#sazka"]); check("přehrání: kontrola i tlačítka bez posunu", !bp.length, bp.join("; "));
+  check("přehrání: stránka se neposouvá", await p.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && scrollY === 0));
+  await shot("5-prehrani");
+  check("bez chyb v konzoli", errs.length === 0, errs.slice(0, 3).join(" | "));
+  await browser.close();
+}
+
 (async () => {
   await suite("Chromium", chromium, { viewport: { width: 1440, height: 900 } }, false);
   await suite("iPhone", webkit, { ...devices["iPhone 13"] }, true);
+  await landscape("naSirku-844x390", { width: 844, height: 390 });
+  await landscape("naSirku-750x342", { width: 750, height: 342 });
   console.log(`\n${pass} PASS, ${fail} FAIL`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("CHYBA", e); process.exit(2); });

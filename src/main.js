@@ -880,9 +880,8 @@ function galItem(k, i, strokes) {
   const fastest = r && r.hit != null && r.hit === Math.min(...hits);
   const nalepka = r && r.inWin ? `<span class="nalepka hv" title="Trefa sázky">${ICON.hvezda}</span>` : fastest ? `<span class="nalepka bl" title="Nejrychlejší">${ICON.blesk}</span>` : "";
   return `<div class="obraz${h.q ? " mydva" : ""}" data-gal="${k}" role="button" tabindex="0" aria-label="Přehrát kresbu ${esc(word(k, d))}" style="--rot:${rot}deg;--tape:${tape}deg;--c:${COL[dr]}">
-    <i class="paska"></i>${nalepka}<div class="kr">${strokes ? K.toSVG(strokes, { mirror: h.m === "zrcadlo" }) : ""}
-    ${room.seat ? `<button class="fav" aria-label="Nejhezčí kresba">${ICON.srdce}</button>` : ""}</div>
-    <div class="pod"><b>${esc(word(k, d))}</b><div class="radek"><span class="kdo">${esc(nameOf(dr))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}</span><span class="srdce-x" hidden>${ICON.srdce}</span><span class="srdce-o" hidden>${ICON.srdce}</span></div></div></div>`;
+    <i class="paska"></i>${nalepka}<div class="kr">${strokes ? K.toSVG(strokes, { mirror: h.m === "zrcadlo" }) : ""}</div>
+    <div class="pod"><div class="slr"><b>${esc(word(k, d))}</b><span class="srdce-x" hidden>${ICON.srdce}</span><span class="srdce-o" hidden>${ICON.srdce}</span></div><div class="radek"><span class="kdo">${esc(nameOf(dr))} · ${r && r.hit != null ? s1(r.hit) + " s" : "neuhodnuto"}</span>${room.seat ? `<button class="fav" aria-label="Nejhezčí kresba">${ICON.srdce}</button>` : ""}</div></div></div>`;
 }
 // srdíčka: každý hráč smí v partii jedno; obě srdíčka na jedné kresbě = shoda
 function paintFavs(p) {
